@@ -1,4 +1,4 @@
-from gordongames.envs.ggames.constants import *
+#from gordongames.envs.ggames.constants import *
 import gym
 import gym_snake
 import time
