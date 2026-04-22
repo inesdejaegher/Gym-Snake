@@ -5,23 +5,20 @@ import time
 env = gym.make("snake-v0")
 base_env = env.unwrapped
 
-# Change the ENV SETTINGS before reset
 base_env.grid_size = [10, 10]
-base_env.n_foods = 3
+base_env.n_foods = 2
+base_env.n_drugs = 1
 base_env.snake_size = 4
 
 obs = env.reset()
 
-print("Configured grid_size:", base_env.grid_size)
-print("Actual grid_size after reset:", base_env.controller.grid.grid_size)
-print("Configured n_foods:", base_env.n_foods)
-print("Actual number of snakes:", len(base_env.controller.snakes))
-
-for _ in range(100):
+for _ in range(200):
     env.render()
     action = env.action_space.sample()
     obs, reward, done, info = env.step(action)
+    print("reward:", reward)
     time.sleep(0.1)
+
     if done:
         obs = env.reset()
 
