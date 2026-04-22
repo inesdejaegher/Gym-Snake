@@ -1,6 +1,7 @@
 import gym
 import gym_snake
 import numpy as np
+np.bool8 = np.bool_
 import random
 from collections import defaultdict
 import matplotlib.pyplot as plt

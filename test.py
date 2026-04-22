@@ -1,3 +1,5 @@
+import numpy as np
+np.bool8 = np.bool_
 import gym
 import gym_snake
 import time
