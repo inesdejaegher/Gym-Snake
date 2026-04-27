@@ -57,6 +57,20 @@ def get_drug_positions(env):
     # drug_positions comes from your modified SnakeEnv
     return [np.array(p) for p in env.unwrapped.drug_positions]
 
+def get_snake_length(env):
+    controller = env.unwrapped.controller
+    if controller is None:
+        return 0
+
+    snake = controller.snakes[0]
+    if snake is None:
+        snake = controller.dead_snakes[0]
+
+    if snake is None:
+        return 0
+
+    return 1 + len(snake.body)
+
 def manhattan(a, b):
     return abs(int(a[0]) - int(b[0])) + abs(int(a[1]) - int(b[1]))
 
@@ -199,6 +213,8 @@ episode_rewards = []
 episode_lengths = []
 episode_drug_pickups = []
 episode_food_like_rewards = []
+episode_snake_lengths = []
+episode_snake_growth = []
 
 epsilon = EPSILON
 
@@ -208,6 +224,7 @@ epsilon = EPSILON
 
 for episode in range(EPISODES):
     obs = env.reset()
+    start_snake_length = get_snake_length(env)
     state = get_state(env)
 
     if state is None:
@@ -215,6 +232,8 @@ for episode in range(EPISODES):
         episode_lengths.append(0)
         episode_drug_pickups.append(0)
         episode_food_like_rewards.append(0)
+        episode_snake_lengths.append(start_snake_length)
+        episode_snake_growth.append(0)
         continue
 
     total_reward = 0
@@ -255,18 +274,25 @@ for episode in range(EPISODES):
     episode_lengths.append(steps)
     episode_drug_pickups.append(drug_pickups)
     episode_food_like_rewards.append(food_rewards)
+    final_snake_length = get_snake_length(env)
+    episode_snake_lengths.append(final_snake_length)
+    episode_snake_growth.append(final_snake_length - start_snake_length)
 
     if (episode + 1) % 50 == 0:
         avg_reward = np.mean(episode_rewards[-50:])
         avg_length = np.mean(episode_lengths[-50:])
         avg_drugs = np.mean(episode_drug_pickups[-50:])
         avg_foods = np.mean(episode_food_like_rewards[-50:])
+        avg_snake_length = np.mean(episode_snake_lengths[-50:])
+        avg_snake_growth = np.mean(episode_snake_growth[-50:])
         print(
             f"Episode {episode + 1:4d} | "
             f"avg reward: {avg_reward:.3f} | "
             f"avg length: {avg_length:.1f} | "
             f"avg drugs: {avg_drugs:.2f} | "
             f"avg foods: {avg_foods:.2f} | "
+            f"avg snake length: {avg_snake_length:.2f} | "
+            f"avg growth: {avg_snake_growth:.2f} | "
             f"epsilon: {epsilon:.3f}"
         )
 
@@ -349,6 +375,7 @@ print("Drugs:", base_env.n_drugs)
 watch_total_reward = 0
 watch_drugs = 0
 watch_foods = 0
+watch_start_snake_length = get_snake_length(env)
 
 if state is not None:
     while not done:
@@ -378,3 +405,6 @@ print("Watch summary:")
 print("Total reward:", watch_total_reward)
 print("Drug pickups:", watch_drugs)
 print("Food pickups:", watch_foods)
+watch_final_snake_length = get_snake_length(env)
+print("Final snake length:", watch_final_snake_length)
+print("Snake growth:", watch_final_snake_length - watch_start_snake_length)

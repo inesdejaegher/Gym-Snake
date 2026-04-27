@@ -26,6 +26,7 @@ class Snake():
         self.direction = self.DOWN
         self.head = np.asarray(head_coord_start).astype(int)
         self.head_color = np.array([255,0,0], np.uint8)
+        self.growth_pending = 0 #To control how much the snake grows
         self.body = deque()
         for i in range(length-1, 0, -1):
             self.body.append(self.head-np.asarray([0,i]).astype(int))

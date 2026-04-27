@@ -121,6 +121,9 @@ class SnakeEnv(gym.Env):
 
         for i, drug_pos in enumerate(self.drug_positions):
             if np.array_equal(snake.head, drug_pos):
+                # snake ate drug
+                snake.growth_pending += 6
+
                 # remove eaten drug
                 self.drug_positions.pop(i)
 
