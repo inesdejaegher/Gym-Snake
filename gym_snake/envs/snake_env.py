@@ -20,6 +20,7 @@ class SnakeEnv(gym.Env):
 
     DRUG_COLOR = np.array([255, 0, 255], dtype=np.uint8)   # purple
     DRUG_REWARD = 6
+    DRUG_GROWTH = 6
 
     def __init__(
         self,
@@ -30,7 +31,9 @@ class SnakeEnv(gym.Env):
         n_snakes=1,
         n_foods=1,
         n_drugs=0,
-        random_init=True
+        random_init=True,
+        drug_reward=None,
+        drug_growth=None
     ):
         self.grid_size = grid_size
         self.unit_size = unit_size
@@ -39,6 +42,8 @@ class SnakeEnv(gym.Env):
         self.n_snakes = n_snakes
         self.n_foods = n_foods
         self.n_drugs = n_drugs
+        self.drug_reward = self.DRUG_REWARD if drug_reward is None else drug_reward
+        self.drug_growth = self.DRUG_GROWTH if drug_growth is None else drug_growth
         self.viewer = None
         self.random_init = random_init
 
@@ -117,12 +122,12 @@ class SnakeEnv(gym.Env):
     def _check_drug_collision(self):
         snake = self.controller.snakes[0]
         if snake is None:
-            return 0
+            return 0, False
 
         for i, drug_pos in enumerate(self.drug_positions):
             if np.array_equal(snake.head, drug_pos):
                 # snake ate drug
-                snake.growth_pending += 6
+                snake.growth_pending += self.drug_growth
 
                 # remove eaten drug
                 self.drug_positions.pop(i)
@@ -139,17 +144,30 @@ class SnakeEnv(gym.Env):
                         self.drug_positions.append(np.array([x, y]))
                         break
 
-                return self.DRUG_REWARD
+                return self.drug_reward, True
 
-        return 0
+        return 0, False
 
     def step(self, action):
         self.last_obs, reward, done, info = self.controller.step(action)
 
         # add drug reward on top of normal controller reward
-        reward += self._check_drug_collision()
+        drug_reward, drug_eaten = self._check_drug_collision()
+        reward += drug_reward
+        info["drug_eaten"] = drug_eaten
+        info["snake_length"] = self.get_snake_length()
 
         return self.last_obs, reward, done, info
+
+    def get_snake_length(self):
+        snake = self.controller.snakes[0]
+        if snake is None:
+            snake = self.controller.dead_snakes[0]
+
+        if snake is None:
+            return 0
+
+        return 1 + len(snake.body)
 
     def reset(self):
         self.controller = Controller(
