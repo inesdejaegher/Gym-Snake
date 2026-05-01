@@ -12,27 +12,38 @@ class Grid():
     It is also assumed that HEAD_COLOR has a 255 value as its 0 channel.
     """
 
-    BODY_COLOR = np.array([1,0,0], dtype=np.uint8)
-    HEAD_COLOR = np.array([255, 0, 0], dtype=np.uint8)
-    FOOD_COLOR = np.array([0,0,255], dtype=np.uint8)
-    SPACE_COLOR = np.array([0,255,0], dtype=np.uint8)
+    # The game uses the pixel colors as the state itself
+    # To check if the tile has food --> the game litteraly checks if the tile is the color of food
+    BODY_COLOR = np.array([0,0,255], dtype=np.uint8)
+    HEAD_COLOR = np.array([127, 0, 255], dtype=np.uint8)
+    FOOD_COLOR = np.array([0,255,0], dtype=np.uint8)
+    SPACE_COLOR = np.array([153,204,255], dtype=np.uint8)
     COLORS = np.asarray([BODY_COLOR, HEAD_COLOR, FOOD_COLOR, SPACE_COLOR])
 
     def __init__(self, grid_size=[30,30], unit_size=10, unit_gap=1):
         """
-        grid_size - tuple, list, or ndarray specifying number of atomic units in
-                    both the x and y direction
-        unit_size - integer denoting the atomic size of grid units in pixels
+        Initialisation function
+
+        Input:
+        - grid_size = tuple, list, or ndarray specifying number of atomic units in
+                      both the x and y direction
+        - unit_size = integer denoting the atomic size of grid units in pixels
         """
 
-        self.unit_size = int(unit_size)
-        self.unit_gap = unit_gap
-        self.grid_size = np.asarray(grid_size, dtype=int) # size in terms of units
+        self.unit_size = int(unit_size) # size in pixels of each tile
+        self.unit_gap = unit_gap # number of pixels used as a border/gap between tiles to form a checkerboard pattern.
+        self.grid_size = np.asarray(grid_size, dtype=int) # number of playable tiles (size in terms of units)
+
+        # Grid creation
         height = self.grid_size[1]*self.unit_size
         width = self.grid_size[0]*self.unit_size
         channels = 3
         self.grid = np.zeros((height, width, channels), dtype=np.uint8)
-        self.grid[:,:,:] = self.SPACE_COLOR
+
+        self.grid[:,:,:] = self.SPACE_COLOR # immediately paint the grid the background color (blank space)
+
+        # Keeps a running integer tally of how many empty tiles remain (initially 900). This is highly optimized
+        # so the game knows exactly when a player wins (0 open spaces left) without recounting the board every frame.
         self.open_space = grid_size[0]*grid_size[1]
 
     def check_death(self, head_coord):
@@ -45,7 +56,8 @@ class Grid():
 
     def color_of(self, coord):
         """
-        Returns the color of the specified coordinate
+        Translates a game coordinate (like [5, 5]) into pixel space (like [50, 50]) 
+        and returns the 3-value RGB array located at that top-left pixel.
 
         coord - x,y integer coordinates as a tuple, list, or ndarray
         """
@@ -57,6 +69,7 @@ class Grid():
         Draws connection between two adjacent pieces using the specified color.
         Created to indicate the relative ordering of the snake's body.
         coord1 and coord2 must be adjacent.
+        --> mathematically fills the gap between two adjacent blocks
 
         coord1 - x,y integer coordinates as a tuple, list, or ndarray
         coord2 - x,y integer coordinates as a tuple, list, or ndarray
@@ -92,13 +105,17 @@ class Grid():
         color - [R,G,B] values as a tuple, list, or ndarray
         """
 
+        # If the specified coordinate is out of the possible grid --> return a False
         if self.off_grid(coord):
             return False
+        
+        # Define the boundaries of the tile that has to be colored
         x = int(coord[0]*self.unit_size)
         end_x = x+self.unit_size-self.unit_gap
         y = int(coord[1]*self.unit_size)
         end_y = y+self.unit_size-self.unit_gap
-        self.grid[y:end_y, x:end_x, :] = np.asarray(color, dtype=np.uint8)
+
+        self.grid[y:end_y, x:end_x, :] = np.asarray(color, dtype=np.uint8)  # Actual coloring of the tile
         return True
 
     def draw(self, coord, color):
@@ -116,53 +133,74 @@ class Grid():
         else:
             return False
 
-
     def draw_snake(self, snake, head_color=HEAD_COLOR):
         """
-        Draws a snake with the given head color.
+        Renders a full Snake object from scratch.
+        Paints the head, then loops throug the queue of body parts and temporarily pops them off the queue, 
+        paints them, draws a connection line to the previous part and then pushes them back onto the queue.
+        Finally it connects the head to the neck
 
         snake - Snake object
         head_color - [R,G,B] values as a tuple, list, or ndarray
         """
 
-        self.draw(snake.head, head_color)
-        prev_coord = None
+        self.draw(snake.head, head_color)   # Paint the head at the head's coordinates
+        prev_coord = None   # Variable will be used to track the previously drawn body segments so the function knows where to draw the connecting lines between the adjacent segments
+
+        # Iterate through the body (which is stored as a double-ended queue)
         for i in range(len(snake.body)):
-            coord = snake.body.popleft()
-            self.draw(coord, self.BODY_COLOR)
-            if prev_coord is not None:
+            coord = snake.body.popleft()    # Remove oldest segment from the queue and save it in the variable 'coord'
+            self.draw(coord, self.BODY_COLOR)   # Draw tail/body segment on the board using the standard 'BODY_COLOR'
+
+            if prev_coord is not None:  # If the pervious piece has a value (meaning that this isn't the first tail piece drawn) --> use the connect() method
                 self.connect(prev_coord, coord, self.BODY_COLOR)
-            snake.body.append(coord)
+
+            snake.body.append(coord)    # Add segment back onto the right side of the queue
+            # By the time the for loop completes its final iteration, every piece of the snake has been popped 
+            # off the left and pushed back onto the right. The queue has done a full rotation and ends up in its 
+            # exact original order
             prev_coord = coord
+
+        # Once loop finishes --> draw connection line between neck of snake and head    
         self.connect(prev_coord, snake.head, self.BODY_COLOR)
 
     def erase(self, coord):
         """
-        Colors the entire coordinate with SPACE_COLOR to erase potential
-        connection lines.
+        Colors an eintire grid tile with SPACE_COLOR to erase potential
+        connection lines and it updates the game's internal tracker to mark
+        the specific tile as available.
 
         coord - (x,y) as tuple, list, or ndarray
         """
+        # Check if tile exists on the grid
         if self.off_grid(coord):
             return False
+        
+        # Add to tracker that there is a new open space in the grid
         self.open_space += 1
+
+        # Define boundaries of the grid
         x = int(coord[0]*self.unit_size)
         end_x = x+self.unit_size
         y = int(coord[1]*self.unit_size)
         end_y = y+self.unit_size
+
+        # Color the grid tile to its default background color
         self.grid[y:end_y, x:end_x, :] = self.SPACE_COLOR
         return True
 
     def erase_connections(self, coord):
         """
-        Colors the dead space of the given coordinate with SPACE_COLOR to erase potential
-        connection lines
+        Function selectively paints over only the borders (the gaps) on the bottom and right sides of a specific coordinate, 
+        reverting them to the background color (SPACE_COLOR).
 
         coord - (x,y) as tuple, list, or ndarray
         """
 
+        # Check if tile exists on the grid
         if self.off_grid(coord):
             return False
+        
         # Erase Horizontal Row Below Coord
         x = int(coord[0]*self.unit_size)
         end_x = x+self.unit_size
@@ -181,13 +219,15 @@ class Grid():
 
     def erase_snake_body(self, snake):
         """
-        Removes the argued snake's body and head from the grid.
+        Function used to systematically wipe a snake's body from the grid.
+        --> Typicall invoked when a snake dies
 
         snake - Snake object
         """
 
+        # Iterate over all the segments in the snake's body
         for i in range(len(snake.body)):
-            self.erase(snake.body.popleft())
+            self.erase(snake.body.popleft())    # Removes the oldest segment of the queue and passes that coordinate into the erase() method
 
     def food_space(self, coord):
         """
@@ -217,13 +257,20 @@ class Grid():
         Returns true if space left. Otherwise returns false.
         """
 
+        # Check if there is still open space left to draw a food block
         if self.open_space < 1:
             return False
         coord_not_found = True
         while(coord_not_found):
+            # Generate a random coordinate (bounded by grid size)
             coord = (np.random.randint(0,self.grid_size[0]), np.random.randint(0,self.grid_size[1]))
+
+            # Check if color of randomly generated coordinate is the same as open space
             if np.array_equal(self.color_of(coord), self.SPACE_COLOR):
+                # If an open coordinate is found --> set param to False to break out while loop
                 coord_not_found = False
+            
+        # Actually draw the food on the selected coordinate
         self.draw(coord, self.FOOD_COLOR)
         return True
 

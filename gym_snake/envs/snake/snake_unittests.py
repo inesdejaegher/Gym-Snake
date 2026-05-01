@@ -3,6 +3,14 @@ import numpy as np
 from gym_snake.envs.snake import Snake
 
 class SnakeTests(unittest.TestCase):
+    """
+    Dedicated Unit Testing Suite for the Snake Class (defined in snake.py)
+
+    Class uses the Python built-in 'unittest' framework to isolate the Snake object,
+    poke it with various inputs (valid, invalid and edge cases) and mathematically 
+    verify that it behaves exactly as expected.
+    
+    """
 
     head_xy = [0,0]
     bod_len = 3
