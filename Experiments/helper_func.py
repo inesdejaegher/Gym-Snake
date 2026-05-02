@@ -1,6 +1,7 @@
 import gym
 import gym_snake
 import numpy as np
+np.bool8 = np.bool_
 import random
 import time
 import os
@@ -56,7 +57,6 @@ def get_discrete_state(env):
     # Return the simple tuple which will be used as a dictionary key in our Q-Table
     return (dir_x, dir_y, danger_up, danger_right, danger_down, danger_left)
 
-
 def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward,epsilon, snake_length):
     """
     Makes a logbook of the different parameters during a single episode
@@ -91,7 +91,6 @@ def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, to
         
     return ratio, total_reward, epsilon, snake_length
 
-
 def plot_preference_ratio_from_csv(file_path):
     """
     Reads the generated CSV file and plots the Preference Ratio over episodes.
@@ -114,6 +113,99 @@ def plot_preference_ratio_from_csv(file_path):
     plt.xlabel('Episode')
     plt.ylabel('Preference Ratio (Drugs / Food)')
     plt.title('Agent Preference Ratio over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_reward_from_csv(file_path, window_size=20):
+    """
+    Reads the generated CSV file and plots the Total Reward over episodes,
+    including a moving average to smooth out the noise.
+    """
+    if not os.path.isfile(file_path):
+        print(f"Error: Could not find {file_path}")
+        return
+
+    episodes = []
+    rewards = []
+
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            episodes.append(int(row['Episode']))
+            rewards.append(float(row['Total_Reward']))
+
+    plt.figure(figsize=(10, 5))
+    # Plot the raw, noisy rewards slightly transparent
+    plt.plot(episodes, rewards, label='Total Reward (Raw)', color='green', alpha=0.3)
+    
+    # Calculate and plot the moving average if we have enough data
+    if len(rewards) >= window_size:
+        moving_avg = np.convolve(rewards, np.ones(window_size)/window_size, mode='valid')
+        plt.plot(episodes[window_size-1:], moving_avg, label=f'{window_size}-Episode Moving Avg', color='darkgreen', linewidth=2)
+
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.title('Agent Total Reward over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_epsilon_from_csv(file_path, window_size=20):
+    """
+    Reads the generated CSV file and plots the Epsilon decay over episodes.
+    """
+    if not os.path.isfile(file_path):
+        print(f"Error: Could not find {file_path}")
+        return
+
+    episodes = []
+    epsilons = []
+
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            episodes.append(int(row['Episode']))
+            epsilons.append(float(row['Epsilon']))
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(episodes, epsilons, label='Epsilon (Exploration Rate)', color='darkblue', linewidth=2)
+    plt.xlabel('Episode')
+    plt.ylabel('Epsilon')
+    plt.title('Agent Exploration Rate (Epsilon) Decay over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_snake_length_from_csv(file_path, window_size=20):
+    """
+    Reads the generated CSV file and plots the Snake Length over episodes.
+    """
+
+    if not os.path.isfile(file_path):
+        print(f"Error: Could not find {file_path}")
+        return
+
+    episodes = []
+    snake_lengths = []
+
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            episodes.append(int(row['Episode']))
+            snake_lengths.append(float(row['Snake_Length']))
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(episodes, snake_lengths, label='Snake Length', color='blue', linewidth=2, alpha=0.3)
+
+    # Calculate and plot the moving average if we have enough data
+    if len(snake_lengths) >= window_size:
+        moving_avg = np.convolve(snake_lengths, np.ones(window_size)/window_size, mode='valid')
+        plt.plot(episodes[window_size-1:], moving_avg, label=f'{window_size}-Episode Moving Avg', color='darkblue', linewidth=2)
+
+    plt.xlabel('Episode')
+    plt.ylabel('Snake Length at End of Episode')
+    plt.title('Snake Length at End of Episode over Time')
     plt.legend()
     plt.grid(True)
     plt.show()

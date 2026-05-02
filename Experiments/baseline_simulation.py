@@ -20,8 +20,7 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 # Initialise storage of simulation results
-SAVE_RESULTS = False
-csv_name = f"FOOD-DRUG_preference_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+csv_name = f"Simulation_Results_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
 
 # Dynamically locate the Results folder one directory up from this script
 csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results")
