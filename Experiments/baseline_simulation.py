@@ -5,16 +5,30 @@ import numpy as np
 np.bool8 = np.bool_
 import random
 import time
+import datetime
 import logging
+import os
 import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import get_discrete_state
+from helper_func import get_discrete_state,logbook_simulation, plot_preference_ratio_from_csv
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
+
+# Initialise storage of simulation results
+SAVE_RESULTS = False
+csv_name = f"FOOD-DRUG_preference_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+
+# Dynamically locate the Results folder one directory up from this script
+csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results")
+os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
+full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
+
+
 
 if __name__ == "__main__":
     # Initialize the baseline environment
@@ -56,6 +70,9 @@ if __name__ == "__main__":
         
         done = False
         total_reward = 0
+        drugs_eaten_this_ep = 0
+        food_eaten_this_ep = 0
+        snake_length = 0
         
         # Play the game until the snake dies (done becomes True)
         while not done:
@@ -75,6 +92,20 @@ if __name__ == "__main__":
             # Take the action in the environment and see what happens
             obs, reward, done, info = env.step(action)
             
+            # Track consumed drugs by looking at the info dictionary returned by the environment
+            if info.get("drug_eaten", False):
+                drugs_eaten_this_ep += 1
+                
+            # Track consumed food by checking the reward. (Subtract drug reward to isolate food reward)
+            if reward - (base_env.drug_reward if info.get("drug_eaten", False) else 0) > 0:
+                food_eaten_this_ep += 1
+            
+            # Keep track of the snake's length.
+            # We only update it if it's > 0 because on the final frame when the snake dies, 
+            # the environment deletes the snake object entirely and returns a length of 0.
+            if info.get("snake_length", 0) > 0:
+                snake_length = info.get("snake_length", 0)
+
             # Read the new state of the board after moving
             next_state = get_discrete_state(env)
             
@@ -100,9 +131,12 @@ if __name__ == "__main__":
                 env.render()
                 time.sleep(0.05) # Slow it down slightly so we can watch it
                 
+        # --- SAVE EPISODE RESULTS ---
+        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, epsilon, snake_length)
+
         # At the end of every episode, decay epsilon so the agent explores less as it gets smarter
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
-        
+
         # Print progress to the console every 100 episodes
         if (episode + 1) % 100 == 0:
             logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")

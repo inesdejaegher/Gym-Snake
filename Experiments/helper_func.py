@@ -3,6 +3,9 @@ import gym_snake
 import numpy as np
 import random
 import time
+import os
+import csv
+import matplotlib.pyplot as plt
 
 def get_discrete_state(env):
     """
@@ -52,3 +55,65 @@ def get_discrete_state(env):
     
     # Return the simple tuple which will be used as a dictionary key in our Q-Table
     return (dir_x, dir_y, danger_up, danger_right, danger_down, danger_left)
+
+
+def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward,epsilon, snake_length):
+    """
+    Makes a logbook of the different parameters during a single episode
+    and appends the result to a CSV file.
+    """
+
+    # ----- PREFERENCE RATIO -----
+    # Calculate ratio safely
+    if n_food_consumed == 0:
+        if n_drugs_consumed == 0:
+            ratio = 0.0
+        else:
+            ratio = float('inf') # Agent only ate drugs, no food
+    else:
+        ratio = n_drugs_consumed / n_food_consumed
+
+
+    # ----- SAVE EPISODE RESULTS -----
+    # Check if the file exists so we know if we need to write headers
+    file_exists = os.path.isfile(file_path)
+
+    # Open the CSV file in append mode ('a')
+    with open(file_path, mode='a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        
+        # Write headers if it's a brand new file
+        if not file_exists:
+            writer.writerow(['Episode', 'Drugs_Consumed', 'Food_Consumed', 'Preference_Ratio', 'Total_Reward', 'Epsilon', 'Snake_Length'])
+            
+        # Write the data for the current episode
+        writer.writerow([episode, n_drugs_consumed, n_food_consumed, ratio, total_reward, epsilon, snake_length])
+        
+    return ratio, total_reward, epsilon, snake_length
+
+
+def plot_preference_ratio_from_csv(file_path):
+    """
+    Reads the generated CSV file and plots the Preference Ratio over episodes.
+    """
+    if not os.path.isfile(file_path):
+        print(f"Error: Could not find {file_path}")
+        return
+
+    episodes = []
+    ratios = []
+
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            episodes.append(int(row['Episode']))
+            ratios.append(float(row['Preference_Ratio']))
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(episodes, ratios, label='Drug/Food Ratio', color='purple', alpha=0.7)
+    plt.xlabel('Episode')
+    plt.ylabel('Preference Ratio (Drugs / Food)')
+    plt.title('Agent Preference Ratio over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
