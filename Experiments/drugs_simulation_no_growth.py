@@ -11,35 +11,60 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import get_discrete_state,logbook_simulation, plot_preference_ratio_from_csv
+from helper_func import get_discrete_state,logbook_simulation
 
+# Define different conditions for the simulation loop
+conditions = [
+    {
+        "name": "drug_reward_5_no_growth",
+        "n_foods": 1,
+        "n_drugs": 1,
+        "drug_reward": 5,
+        "drug_growth": 0,
+    },
+    {
+        "name": "drug_reward_25_no_growth",
+        "n_foods": 1,
+        "n_drugs": 1,
+        "drug_reward": 25,
+        "drug_growth": 0,
+    },
+    {
+        "name": "drug_reward_100_no_growth",
+        "n_foods": 1,
+        "n_drugs": 1,
+        "drug_reward": 100,
+        "drug_growth": 0,
+    },
+]
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
-# Initialise storage of simulation results
-csv_name = f"Simulation_Results_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
-
-# Dynamically locate the Results folder one directory up from this script
-csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Baseline")
-os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
-full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 
 
+def run_simulation(condition):
 
-if __name__ == "__main__":
-    # Initialize the baseline environment
+    # Initialise storage of simulation results
+    csv_name = f"{condition['name']}_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+
+    # Dynamically locate the Results folder one directory up from this script
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Growth")
+    os.makedirs(csv_dir, exist_ok=True)
+    full_csv_path = os.path.join(csv_dir, csv_name)
+
+    # Initialize the drug simulation environment
     env = gym.make('snake-v0')
     
     # Access the unwrapped base environment to safely change parameters before reset
     base_env = env.unwrapped
     base_env.grid_size = [10, 10]  # Smaller grid speeds up initial tabular learning
-    base_env.n_foods = 1           # Baseline scenario: strictly 1 food
-    base_env.n_drugs = 0           # Baseline scenario: no drugs
-    base_env.drug_reward = 0       # Baseline scenario: drugs have no effect
-    base_env.drug_growth = 0       # Baseline scenario: drugs give no growth
+    base_env.n_foods = condition["n_foods"]
+    base_env.n_drugs = condition["n_drugs"]
+    base_env.drug_reward = condition["drug_reward"]
+    base_env.drug_growth = condition["drug_growth"]
 
     
     # ----- Q-Learning Hyperparameters -----
@@ -55,8 +80,6 @@ if __name__ == "__main__":
     # - Key = The discrete state tuple we extracted above
     # - Value = A numpy array of 4 numbers, representing the "expected value" (Q-value) of moving UP, RIGHT, DOWN, LEFT
     q_table = {}
-
-    logging.info("Starting Baseline Q-Learning Training...")
 
     # Loop over the number of episodes (games)
     for episode in range(episodes):
@@ -140,7 +163,11 @@ if __name__ == "__main__":
         if (episode + 1) % 100 == 0:
             logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")
             
-    logging.info("Training Complete!")
+    logging.info(f"Training complete for: {condition['name']}")
     
     # Clean up the rendering window
     env.close()
+
+if __name__ == "__main__":
+    for condition in conditions:
+        run_simulation(condition)

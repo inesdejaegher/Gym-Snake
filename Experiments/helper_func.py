@@ -209,3 +209,72 @@ def plot_snake_length_from_csv(file_path, window_size=20):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+
+def plot_metric_subplots_from_csv(file_paths, subplot_titles, metric, y_label=None, main_title=None, window_size=20, ncols=None):
+    """
+    Plots the same metric from multiple CSV files as subplots.
+
+    file_paths: list of CSV paths
+    subplot_titles: list of titles, one for each subplot
+    metric: CSV column to plot, e.g. 'Total_Reward' or 'Preference_Ratio'
+    """
+    if len(file_paths) == 0:
+        print("Error: No CSV files were provided.")
+        return None, None
+
+    if len(file_paths) != len(subplot_titles):
+        print("Error: file_paths and subplot_titles must have the same length.")
+        return None, None
+
+    if ncols is None:
+        ncols = len(file_paths)
+
+    nrows = int(np.ceil(len(file_paths) / ncols))
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6 * ncols, 4 * nrows), sharex=True)
+    axes = np.array(axes).reshape(-1)
+
+    for ax, file_path, subplot_title in zip(axes, file_paths, subplot_titles):
+        if not os.path.isfile(file_path):
+            ax.set_title(subplot_title)
+            ax.text(0.5, 0.5, "CSV file not found", ha="center", va="center", transform=ax.transAxes)
+            ax.set_axis_off()
+            continue
+
+        episodes = []
+        values = []
+
+        with open(file_path, mode='r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            if metric not in reader.fieldnames:
+                ax.set_title(subplot_title)
+                ax.text(0.5, 0.5, f"Column not found: {metric}", ha="center", va="center", transform=ax.transAxes)
+                ax.set_axis_off()
+                continue
+
+            for row in reader:
+                episodes.append(int(row['Episode']))
+                values.append(float(row[metric]))
+
+        ax.plot(episodes, values, label=metric, alpha=0.3)
+
+        if len(values) >= window_size:
+            moving_avg = np.convolve(values, np.ones(window_size) / window_size, mode='valid')
+            ax.plot(episodes[window_size - 1:], moving_avg, label=f'{window_size}-Episode Moving Avg', linewidth=2)
+
+        ax.set_title(subplot_title)
+        ax.set_xlabel("Episode")
+        ax.set_ylabel(y_label if y_label is not None else metric)
+        ax.legend()
+        ax.grid(True)
+
+    for ax in axes[len(file_paths):]:
+        ax.set_axis_off()
+
+    if main_title is not None:
+        fig.suptitle(main_title)
+
+    plt.tight_layout()
+    plt.show()
+
+    return fig, axes[:len(file_paths)]
