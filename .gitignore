@@ -1,2 +1,5 @@
 *.egg-info/
 CBIAI/
+__pycache__/
+.DS_Store
+*.pyc

@@ -20,7 +20,7 @@ folder = os.path.join(os.path.dirname(__file__), "..", "Results")
 # -------------------------------------
 # ----- PLOTTING BASELINE RESULTS -----
 # -------------------------------------
-CSV_NAME = "FOOD-DRUG_preference_logbook_TIME_02_05_2026_12-00-58.csv"
+CSV_NAME = "Simulation_Results_logbook_TIME_02_05_2026_17-04-26.csv"
 full_csv_path = os.path.join(folder, CSV_NAME) # Combine folder and file name
 
 # ----- PLOT PREFERENCE RATIO -----
