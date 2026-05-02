@@ -33,7 +33,7 @@ class Controller():
         for i in range(1,n_snakes+1):
             start_coord = [i*grid_size[0]//(n_snakes+1), snake_size+1]   # Initialise the start coordinates of the snakes
             self.snakes.append(Snake(start_coord, snake_size))  # Initialise the snakes themselves and append them to the list of snakes we have
-            color = [self.grid.HEAD_COLOR[0], 255, i*10]    # If we work with multiple snakes --> give each head a different color  
+            color = [self.grid.HEAD_COLOR[0], i*10, 255]    # If we work with multiple snakes --> give each head a different color  
             self.snakes[-1].head_color = color  # Assign the colors to the different snakes
             self.grid.draw_snake(self.snakes[-1], color)    # Paint the snakes on the board
             self.dead_snakes.append(None)   # Set up the death tracking of the snake

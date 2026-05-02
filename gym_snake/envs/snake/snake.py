@@ -42,7 +42,7 @@ class Snake():
 
         self.direction = self.DOWN      # Defaults the snake to face down when it spawns
         self.head = np.asarray(head_coord_start).astype(int)        #  Stores the head's (x,y) coordinates as np array of integers
-        self.head_color = np.array([127,255,0], np.uint8)     # Sets the color of the head of the snake (currently purple)
+        self.head_color = np.array([127,0,255], np.uint8)     # Sets the color of the head of the snake (currently purple)
         
         # CRUCIAL COUNTER (especially for environments dealing with multi-step growth) 
         # --> counter tracks how many segments the snake STILL NEEDS TO GROW
