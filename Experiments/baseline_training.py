@@ -12,7 +12,7 @@ import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import get_discrete_state,logbook_simulation, plot_preference_ratio_from_csv
+from helper_func import get_discrete_state
 
 
 # Configure logging
@@ -20,8 +20,11 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+# --------------------------
+# ----- INITIALISATION -----
+# --------------------------
 # Initialise storage of simulation results
-q_table_name = f"q_table_baseline_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+q_table_name = f"q_table_baseline_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
 # Dynamically locate the Q-Table folder one directory up from this script
 q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline")
@@ -30,6 +33,7 @@ full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and
 
 
 if __name__ == "__main__":
+    
     # Initialize the baseline environment
     env = gym.make('snake-v0')
     
@@ -43,7 +47,7 @@ if __name__ == "__main__":
 
     
     # ----- Q-Learning Hyperparameters -----
-    episodes = 1000         # Total games to play
+    episodes = 5000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games
@@ -58,6 +62,9 @@ if __name__ == "__main__":
 
     logging.info("Starting Baseline Q-Learning Training...")
 
+    # --------------------------
+    # ----- TRAINING LOOP -----
+    # --------------------------
     # Loop over the number of episodes (games)
     for episode in range(episodes):
         
@@ -91,6 +98,7 @@ if __name__ == "__main__":
             # Take the action in the environment and see what happens
             obs, reward, done, info = env.step(action)
             
+            # ----- TRACKING -----
             # Track consumed drugs by looking at the info dictionary returned by the environment
             if info.get("drug_eaten", False):
                 drugs_eaten_this_ep += 1

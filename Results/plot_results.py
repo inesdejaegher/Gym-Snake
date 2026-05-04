@@ -6,7 +6,7 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import plot_preference_ratio_from_csv, plot_reward_from_csv, plot_epsilon_from_csv, plot_snake_length_from_csv
+from Experiments.helper_func import plot_preference_ratio_from_csv, plot_reward_from_csv, plot_epsilon_from_csv, plot_snake_length_from_csv
 
 
 # Configure logging

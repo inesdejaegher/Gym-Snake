@@ -1,13 +1,14 @@
-import gym
-import gym_snake
-import numpy as np
 import pickle
 import time
-from helper_func import get_discrete_state, logbook_simulation
 import logging
 import warnings
 import os
 import datetime
+import gym
+import gym_snake
+import numpy as np
+
+from helper_func import get_discrete_state, logbook_simulation
 
 warnings.filterwarnings("ignore")
 
@@ -21,11 +22,12 @@ logging.basicConfig(level=logging.INFO,
 # ----- PARAMETERS TO SET -----
 # -----------------------------
 # Path to stored Q-table
-q_table_name = "q_table_baseline_TIME_04_05_2026_15-34-11.pkl"
+q_table_name = "q_table_baseline_EP_5000_TIME_04_05_2026_15-34-11.pkl"
 csv_name = f"Evaluation_Results_logbook_" + q_table_name.replace(".pkl", ".csv")
 
 # Number of episodes we want to do evaluation on
 eval_episodes = 100
+max_steps_without_consumption = 100
 
 
 # ----- STORAGE FOLDER FOR RESULTS -----
@@ -123,7 +125,7 @@ if __name__ == "__main__":
             
             # ----- LOOP PREVENTION -----
             # Prevent infinite loops if the agent gets stuck going in circles
-            if steps_without_food > 100:
+            if steps_without_food > max_steps_without_consumption:
                 logging.info("Agent stuck in a loop. Forcing episode end.")
                 loop = 1
                 break
@@ -131,7 +133,11 @@ if __name__ == "__main__":
         # --- SAVE EPISODE RESULTS ---
         logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, snake_length, steps, loop)
                 
-        logging.info(f"Evaluation Episode {episode + 1} finished | Total Reward: {total_reward} | Snake Length: {snake_length} | Steps: {steps}")
+        logging.info(
+            f"Baseline | Evaluation Episode {episode + 1}/{eval_episodes} finished "
+            f"| Total Reward: {total_reward} | Drugs: {drugs_eaten_this_ep} "
+            f"| Food: {food_eaten_this_ep} | Snake Length: {snake_length} | Steps: {steps}"
+        )
 
     env.close()
     logging.info("Evaluation Complete!")

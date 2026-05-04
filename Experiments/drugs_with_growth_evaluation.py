@@ -31,23 +31,39 @@ def extract_drug_reward(q_table_path):
     Extracts the drug reward from a Q-table filename.
 
     Example:
-    q_table_drug_reward_25_no_growth_EP_5000_TIME_04_05_2026_17-49-47.pkl
+    q_table_drug_reward_25_growth_25_TIME_04_05_2026_17-49-47.pkl
     returns 25.
     """
     q_table_name = os.path.basename(q_table_path)
-    match = re.search(r"drug_reward_(\d+)_no_growth", q_table_name)
+    match = re.search(r"drug_reward_(\d+)_growth", q_table_name)
 
     if match is None:
         raise ValueError(f"Could not extract drug reward from: {q_table_name}")
 
     return int(match.group(1))
 
+def extract_drug_growth(q_table_path):
+    """
+    Extracts the drug growth from a Q-table filename.
+
+    Example:
+    q_table_drug_reward_25_growth_25_TIME_04_05_2026_17-49-47.pkl
+    returns 25.
+    """
+    q_table_name = os.path.basename(q_table_path)
+    match = re.search(r"growth_(\d+)", q_table_name)
+
+    if match is None:
+        raise ValueError(f"Could not extract drug growth from: {q_table_name}")
+
+    return int(match.group(1))
+
 
 def find_q_tables(q_table_dir):
     """
-    Finds all no-growth drug Q-tables and sorts them by drug reward.
+    Finds all growth drug Q-tables and sorts them by drug reward.
     """
-    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_no_growth_EP_5000_TIME_*.pkl")
+    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_growth_*_EP_5000_TIME_*.pkl")
     q_table_paths = glob.glob(pattern)
     return sorted(q_table_paths, key=extract_drug_reward)
 
@@ -58,11 +74,12 @@ def evaluate_q_table(q_table_path):
     """
     q_table_name = os.path.basename(q_table_path)
     drug_reward = extract_drug_reward(q_table_path)
-    condition_name = f"drug_reward_{drug_reward}_no_growth"
+    drug_growth = extract_drug_growth(q_table_path)
+    condition_name = f"drug_reward_{drug_reward}_growth_{drug_growth}"
 
     # ----- STORAGE FOLDER FOR RESULTS -----
     csv_name = f"Evaluation_Results_logbook_{q_table_name.replace('.pkl', '.csv')}"
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Growth")
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_Growth")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
 
@@ -81,7 +98,7 @@ def evaluate_q_table(q_table_path):
     base_env.n_foods = 1
     base_env.n_drugs = 1
     base_env.drug_reward = drug_reward
-    base_env.drug_growth = 0
+    base_env.drug_growth = drug_growth
 
     # -----------------------------------
     # ----- Run the evaluation loop -----
@@ -164,13 +181,13 @@ def evaluate_q_table(q_table_path):
 
 
 if __name__ == "__main__":
-    # Find all no-growth drug Q-tables
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
+    # Find all growth drug Q-tables
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Growth")
     q_table_paths = find_q_tables(q_table_dir)
 
     # Check if any Q-tables were found
     if len(q_table_paths) == 0:
-        raise FileNotFoundError(f"No no-growth drug Q-tables found in: {q_table_dir}")
+        raise FileNotFoundError(f"No growth drug Q-tables found in: {q_table_dir}")
 
     # Evaluate each Q-table
     for q_table_path in q_table_paths:
