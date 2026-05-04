@@ -48,6 +48,20 @@ def get_discrete_state(env):
     dir_x = 1 if food_x > head_x else (-1 if food_x < head_x else 0)
     dir_y = 1 if food_y > head_y else (-1 if food_y < head_y else 0)
     
+    #4. Calculate relative X & Y distances to the drug
+    drug_dir_x, drug_dir_y = 0, 0
+    # Access the list of drug coordinates from your custom environment wrapper
+    drug_positions = env.unwrapped.drug_positions 
+    
+    if len(drug_positions) > 0:
+        # Grab the X and Y of the first drug on the board
+        drug_x = int(drug_positions[0][0])
+        drug_y = int(drug_positions[0][1])
+        
+        # Calculate relative X & Y distances to the drug
+        drug_dir_x = 1 if drug_x > head_x else (-1 if drug_x < head_x else 0)
+        drug_dir_y = 1 if drug_y > head_y else (-1 if drug_y < head_y else 0)
+        
     # 4. Check for immediate dangers (walls or own body) using the grid's death checker
     danger_up = int(controller.grid.check_death((head_x, head_y - 1)))
     danger_right = int(controller.grid.check_death((head_x + 1, head_y)))
