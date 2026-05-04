@@ -30,7 +30,7 @@ def get_discrete_state(env):
         
     # Fallback if somehow still missing (edge case)
     if snake is None:
-        return (0, 0, 1, 1, 1, 1)
+        return (0, 0, 0, 0, 1, 1, 1, 1)
 
     # 1. Grab head coordinates
     head_x, head_y = int(snake.head[0]), int(snake.head[1])
@@ -45,8 +45,8 @@ def get_discrete_state(env):
                 break
                 
     # 3. Calculate relative X & Y distances to the food
-    dir_x = 1 if food_x > head_x else (-1 if food_x < head_x else 0)
-    dir_y = 1 if food_y > head_y else (-1 if food_y < head_y else 0)
+    food_dir_x = 1 if food_x > head_x else (-1 if food_x < head_x else 0)
+    food_dir_y = 1 if food_y > head_y else (-1 if food_y < head_y else 0)
     
     #4. Calculate relative X & Y distances to the drug
     drug_dir_x, drug_dir_y = 0, 0
@@ -69,7 +69,7 @@ def get_discrete_state(env):
     danger_left = int(controller.grid.check_death((head_x - 1, head_y)))
     
     # Return the simple tuple which will be used as a dictionary key in our Q-Table
-    return (dir_x, dir_y, danger_up, danger_right, danger_down, danger_left)
+    return (food_dir_x, food_dir_y, drug_dir_x, drug_dir_y, danger_up, danger_right, danger_down, danger_left)
 
 def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward,epsilon, snake_length):
     """
