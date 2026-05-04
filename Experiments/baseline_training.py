@@ -21,17 +21,12 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 # Initialise storage of simulation results
-csv_name = f"Simulation_Results_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
 q_table_name = f"q_table_baseline_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
-# Dynamically locate the Results folder one directory up from this script
-csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Baseline")
-os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
-full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
-
+# Dynamically locate the Q-Table folder one directory up from this script
 q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline")
-os.makedirs(q_table_dir, exist_ok=True) 
-full_q_table_path = os.path.join(q_table_dir, q_table_name) 
+os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
+full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
 
 if __name__ == "__main__":
@@ -48,12 +43,12 @@ if __name__ == "__main__":
 
     
     # ----- Q-Learning Hyperparameters -----
+    episodes = 1000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games
     epsilon_min = 0.01      # The minimum randomness we allow, ensuring it always explores a tiny bit
-    epsilon_decay = 0.995   # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
-    episodes = 1000         # Total games to play
+    epsilon_decay = 0.01**(1/(0.9*episodes))   # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
     
     # Initialize the Q-table
     # A dictionary where:

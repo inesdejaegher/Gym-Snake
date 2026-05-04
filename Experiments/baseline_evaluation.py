@@ -25,11 +25,7 @@ q_table_name = "q_table_baseline_TIME_04_05_2026_15-34-11.pkl"
 csv_name = f"Evaluation_Results_logbook_" + q_table_name.replace(".pkl", ".csv")
 
 # Number of episodes we want to do evaluation on
-eval_episodes = 2
-
-
-
-
+eval_episodes = 100
 
 
 # ----- STORAGE FOLDER FOR RESULTS -----
@@ -43,8 +39,7 @@ full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 
 # ----------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # 1. Load the trained Q-table
-    
+    # Load the trained Q-table
     with open(q_table_path, "rb") as f:
         q_table = pickle.load(f)
 
@@ -74,6 +69,8 @@ if __name__ == "__main__":
         food_eaten_this_ep = 0
         snake_length = 0
         steps = 0
+        steps_without_food = 0
+        loop = 0
         
         while not done:
             # --- PURE EXPLOITATION ---
@@ -89,13 +86,22 @@ if __name__ == "__main__":
             obs, reward, done, info = env.step(action)
             
             # ----- TRACK FOOD AND DRUGS EATEN DURING EPISODE -----
+            ate_something = False
+
             # Track consumed drugs by looking at the info dictionary returned by the environment
             if info.get("drug_eaten", False):
                 drugs_eaten_this_ep += 1
+                ate_something = True
                 
             # Track consumed food by checking the reward. (Subtract drug reward to isolate food reward)
             if reward - (base_env.drug_reward if info.get("drug_eaten", False) else 0) > 0:
                 food_eaten_this_ep += 1
+                ate_something = True
+
+            if ate_something:
+                steps_without_food = 0
+            else:
+                steps_without_food += 1
 
             # ----- TRACKING SNAKE LENGTH ----
             # Keep track of the snake's length.
@@ -109,19 +115,23 @@ if __name__ == "__main__":
             total_reward += reward
             steps += 1
             
+            # ----- RENDER EVALUATION -----
             # Render the game so we can watch the trained agent
-            env.render()
-            time.sleep(0.05)  # Slow down the frames slightly to make it watchable
+            # Delete if not needed
+            # env.render()
+            # time.sleep(0.05)  # Slow down the frames slightly to make it watchable
             
             # ----- LOOP PREVENTION -----
             # Prevent infinite loops if the agent gets stuck going in circles
-            if steps > 250:
-                print("Agent stuck in a loop. Forcing episode end.")
+            if steps_without_food > 100:
+                logging.info("Agent stuck in a loop. Forcing episode end.")
+                loop = 1
                 break
 
         # --- SAVE EPISODE RESULTS ---
-        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, snake_length)
+        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, snake_length, steps, loop)
                 
-        logging.info(f"Evaluation Episode {episode + 1} finished | Total Reward: {total_reward} | Snake Length: {snake_length}")
+        logging.info(f"Evaluation Episode {episode + 1} finished | Total Reward: {total_reward} | Snake Length: {snake_length} | Steps: {steps}")
 
     env.close()
+    logging.info("Evaluation Complete!")
