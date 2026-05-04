@@ -8,6 +8,7 @@ import time
 import datetime
 import logging
 import os
+import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -21,12 +22,16 @@ logging.basicConfig(level=logging.INFO,
 
 # Initialise storage of simulation results
 csv_name = f"Simulation_Results_logbook_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+q_table_name = f"q_table_baseline_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
 # Dynamically locate the Results folder one directory up from this script
 csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Baseline")
 os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline")
+os.makedirs(q_table_dir, exist_ok=True) 
+full_q_table_path = os.path.join(q_table_dir, q_table_name) 
 
 
 if __name__ == "__main__":
@@ -126,12 +131,9 @@ if __name__ == "__main__":
             total_reward += reward
             
             # Visually render the environment for the last 5 episodes so we can watch what it learned
-            if episode >= episodes - 5:
-                env.render()
-                time.sleep(0.05) # Slow it down slightly so we can watch it
-                
-        # --- SAVE EPISODE RESULTS ---
-        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, epsilon, snake_length)
+            # if episode >= episodes - 5:
+                # env.render()
+                # time.sleep(0.05) # Slow it down slightly so we can watch it
 
         # At the end of every episode, decay epsilon so the agent explores less as it gets smarter
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
@@ -141,6 +143,12 @@ if __name__ == "__main__":
             logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")
             
     logging.info("Training Complete!")
+
+    # Save the Q-table to a file
+    with open(full_q_table_path, "wb") as f:
+        pickle.dump(q_table, f)
+
+    logging.info(f"Q-table successfully saved to: {full_q_table_path}")
     
     # Clean up the rendering window
     env.close()

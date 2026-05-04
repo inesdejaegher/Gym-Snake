@@ -71,7 +71,7 @@ def get_discrete_state(env):
     # Return the simple tuple which will be used as a dictionary key in our Q-Table
     return (food_dir_x, food_dir_y, drug_dir_x, drug_dir_y, danger_up, danger_right, danger_down, danger_left)
 
-def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward,epsilon, snake_length):
+def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward, snake_length):
     """
     Makes a logbook of the different parameters during a single episode
     and appends the result to a CSV file.
@@ -98,12 +98,12 @@ def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, to
         
         # Write headers if it's a brand new file
         if not file_exists:
-            writer.writerow(['Episode', 'Drugs_Consumed', 'Food_Consumed', 'Preference_Ratio', 'Total_Reward', 'Epsilon', 'Snake_Length'])
+            writer.writerow(['Episode', 'Drugs_Consumed', 'Food_Consumed', 'Preference_Ratio', 'Total_Reward', 'Snake_Length'])
             
         # Write the data for the current episode
-        writer.writerow([episode, n_drugs_consumed, n_food_consumed, ratio, total_reward, epsilon, snake_length])
+        writer.writerow([episode, n_drugs_consumed, n_food_consumed, ratio, total_reward, snake_length])
         
-    return ratio, total_reward, epsilon, snake_length
+    return ratio, total_reward, snake_length
 
 def plot_preference_ratio_from_csv(file_path, window_size=20):
     """
