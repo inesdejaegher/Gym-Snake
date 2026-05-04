@@ -8,6 +8,7 @@ import time
 import datetime
 import logging
 import os
+import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -21,6 +22,20 @@ conditions = [
         "n_drugs": 1,
         "drug_reward": 5,
         "drug_growth": 0,
+    },
+    {
+        "name": "drug_reward_25_no_growth",
+        "n_foods": 1,
+        "n_drugs": 1,
+        "drug_reward": 25,
+        "drug_growth": 0,
+    },
+    {
+        "name": "drug_reward_100_no_growth",
+        "n_foods": 1,
+        "n_drugs": 1,
+        "drug_reward": 100,
+        "drug_growth": 0,
     }
 ]
 
@@ -33,13 +48,14 @@ logging.basicConfig(level=logging.INFO,
 
 def run_simulation(condition):
 
-    # Initialise storage of simulation results
-    csv_name = f"{condition['name']}_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
 
-    # Dynamically locate the Results folder one directory up from this script
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Growth")
-    os.makedirs(csv_dir, exist_ok=True)
-    full_csv_path = os.path.join(csv_dir, csv_name)
+    # Initialise storage of simulation results
+    q_table_name = f"q_table_{condition['name']}_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+
+    # Dynamically locate the Q-Table folder one directory up from this script
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
+    os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
+    full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
     # Initialize the drug simulation environment
     env = gym.make('snake-v0')
@@ -54,12 +70,13 @@ def run_simulation(condition):
 
     
     # ----- Q-Learning Hyperparameters -----
+    episodes = 1000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games
     epsilon_min = 0.01      # The minimum randomness we allow, ensuring it always explores a tiny bit
-    epsilon_decay = 0.995   # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
-    episodes = 1000         # Total games to play
+    epsilon_decay = 0.01**(1/(0.9*episodes))    # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
+
     
     # Initialize the Q-table
     # A dictionary where:
@@ -135,13 +152,10 @@ def run_simulation(condition):
             total_reward += reward
             
             # Visually render the environment for the last 5 episodes so we can watch what it learned
-            if episode >= episodes - 5:
-                env.render()
-                time.sleep(0.05) # Slow it down slightly so we can watch it
+            #if episode >= episodes - 5:
+                #env.render()
+                #time.sleep(0.05) # Slow it down slightly so we can watch it
                 
-        # --- SAVE EPISODE RESULTS ---
-        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, epsilon, snake_length)
-
         # At the end of every episode, decay epsilon so the agent explores less as it gets smarter
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
@@ -150,6 +164,12 @@ def run_simulation(condition):
             logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")
             
     logging.info(f"Training complete for: {condition['name']}")
+    
+    # Save the Q-table to a file
+    with open(full_q_table_path, "wb") as f:
+        pickle.dump(q_table, f)
+
+    logging.info(f"Q-table successfully saved to: {full_q_table_path}")
     
     # Clean up the rendering window
     env.close()
