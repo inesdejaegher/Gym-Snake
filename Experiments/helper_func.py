@@ -105,28 +105,137 @@ def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, to
         
     return ratio, total_reward, epsilon, snake_length
 
-def plot_preference_ratio_from_csv(file_path):
+def plot_preference_ratio_from_csv(file_path, window_size=20):
     """
-    Reads the generated CSV file and plots the Preference Ratio over episodes.
+    Reads the generated CSV file and plots a smoothed Preference Ratio over episodes.
+
+    Instead of directly plotting the raw Preference_Ratio column, this function
+    calculates the ratio from rolling averages:
+
+        rolling drugs consumed / rolling food consumed
+
+    This avoids strange jumps caused by episodes where food consumed is 0.
     """
     if not os.path.isfile(file_path):
         print(f"Error: Could not find {file_path}")
         return
 
     episodes = []
-    ratios = []
+    drugs_consumed = []
+    food_consumed = []
 
     with open(file_path, mode='r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             episodes.append(int(row['Episode']))
-            ratios.append(float(row['Preference_Ratio']))
+            drugs_consumed.append(float(row['Drugs_Consumed']))
+            food_consumed.append(float(row['Food_Consumed']))
+
+    drugs_consumed = np.array(drugs_consumed)
+    food_consumed = np.array(food_consumed)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(episodes, ratios, label='Drug/Food Ratio', color='purple', alpha=0.7)
+
+    if len(episodes) >= window_size:
+        drugs_moving_avg = np.convolve(
+            drugs_consumed,
+            np.ones(window_size) / window_size,
+            mode='valid'
+        )
+
+        food_moving_avg = np.convolve(
+            food_consumed,
+            np.ones(window_size) / window_size,
+            mode='valid'
+        )
+
+        # Avoid division by zero
+        preference_ratio = np.divide(
+            drugs_moving_avg,
+            food_moving_avg,
+            out=np.zeros_like(drugs_moving_avg),
+            where=food_moving_avg != 0
+        )
+
+        plt.plot(
+            episodes[window_size - 1:],
+            preference_ratio,
+            label=f'{window_size}-Episode Moving Preference Ratio',
+            color='purple',
+            linewidth=2
+        )
+
+    else:
+        raw_ratio = np.divide(
+            drugs_consumed,
+            food_consumed,
+            out=np.zeros_like(drugs_consumed),
+            where=food_consumed != 0
+        )
+
+        plt.plot(
+            episodes,
+            raw_ratio,
+            label='Preference Ratio',
+            color='purple',
+            alpha=0.7
+        )
+
     plt.xlabel('Episode')
     plt.ylabel('Preference Ratio (Drugs / Food)')
     plt.title('Agent Preference Ratio over Time')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_drugs_consumed_from_csv(file_path, window_size=20):
+    """
+    Reads the generated CSV file and plots the number of drugs consumed per episode.
+    Also plots a moving average to make the trend easier to see.
+    """
+    if not os.path.isfile(file_path):
+        print(f"Error: Could not find {file_path}")
+        return
+
+    episodes = []
+    drugs_consumed = []
+
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            episodes.append(int(row['Episode']))
+            drugs_consumed.append(float(row['Drugs_Consumed']))
+
+    plt.figure(figsize=(10, 5))
+
+    # Raw values
+    plt.plot(
+        episodes,
+        drugs_consumed,
+        label='Drugs Consumed per Episode',
+        color='red',
+        alpha=0.3
+    )
+
+    # Moving average
+    if len(drugs_consumed) >= window_size:
+        moving_avg = np.convolve(
+            drugs_consumed,
+            np.ones(window_size) / window_size,
+            mode='valid'
+        )
+
+        plt.plot(
+            episodes[window_size - 1:],
+            moving_avg,
+            label=f'{window_size}-Episode Moving Avg',
+            color='darkred',
+            linewidth=2
+        )
+
+    plt.xlabel('Episode')
+    plt.ylabel('Drugs Consumed')
+    plt.title('Drugs Consumed over Time')
     plt.legend()
     plt.grid(True)
     plt.show()

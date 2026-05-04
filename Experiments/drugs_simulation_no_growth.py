@@ -21,21 +21,7 @@ conditions = [
         "n_drugs": 1,
         "drug_reward": 5,
         "drug_growth": 0,
-    },
-    {
-        "name": "drug_reward_25_no_growth",
-        "n_foods": 1,
-        "n_drugs": 1,
-        "drug_reward": 25,
-        "drug_growth": 0,
-    },
-    {
-        "name": "drug_reward_100_no_growth",
-        "n_foods": 1,
-        "n_drugs": 1,
-        "drug_reward": 100,
-        "drug_growth": 0,
-    },
+    }
 ]
 
 # Configure logging
