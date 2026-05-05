@@ -79,7 +79,7 @@ def evaluate_q_table(q_table_path):
 
     # ----- STORAGE FOLDER FOR RESULTS -----
     csv_name = f"Evaluation_Results_logbook_{q_table_name.replace('.pkl', '.csv')}"
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_Growth")
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_With_Growth")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
 
@@ -182,7 +182,7 @@ def evaluate_q_table(q_table_path):
 
 if __name__ == "__main__":
     # Find all growth drug Q-tables
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Growth")
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_With_Growth")
     q_table_paths = find_q_tables(q_table_dir)
 
     # Check if any Q-tables were found

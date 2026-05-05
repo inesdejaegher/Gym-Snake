@@ -164,7 +164,7 @@ def evaluate_q_table(q_table_path):
 
 
 if __name__ == "__main__":
-    # Find all no-growth drug Q-tables
+    # Find all no-growth drug Q-tables in the specified directory
     q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
     q_table_paths = find_q_tables(q_table_dir)
 
