@@ -32,6 +32,8 @@ class SnakeEnv(gym.Env):
     N_DRUGS = 0
     MAX_ENERGY = 100
     STEP_ENERGY_COST = 1    
+    DRUG_RESETS_ENERGY = False
+    DRUG_ENERGY_PENALTY_FACTOR = 0
 
     def __init__(
         self,
@@ -46,7 +48,9 @@ class SnakeEnv(gym.Env):
         drug_reward=None,
         drug_growth=None,
         max_energy=None,
-        step_energy_cost=None):
+        step_energy_cost=None,
+        drug_resets_energy=None,
+        drug_energy_penalty_factor=None):
         """
         Initialisation function
         --> Setting Instance Variables = assigns grid dimensions, game settings and the drug parameters to the instance
@@ -67,6 +71,9 @@ class SnakeEnv(gym.Env):
         self.drug_growth = self.DRUG_GROWTH if drug_growth is None else drug_growth
         self.max_energy = self.MAX_ENERGY if max_energy is None else max_energy
         self.step_energy_cost = self.STEP_ENERGY_COST if step_energy_cost is None else step_energy_cost
+        self.drug_resets_energy = self.DRUG_RESETS_ENERGY if drug_resets_energy is None else drug_resets_energy
+        self.drug_energy_penalty_factor = self.DRUG_ENERGY_PENALTY_FACTOR if drug_energy_penalty_factor is None else drug_energy_penalty_factor
+
 
         self.viewer = None
         self.random_init = random_init
@@ -195,7 +202,13 @@ class SnakeEnv(gym.Env):
             # Check if the head of the snake and the drug coordinates are the same
             if np.array_equal(snake.head, drug_pos):
                 # Growth effect of eating the drug --> pending growth increases
-                snake.growth_pending += self.drug_growth
+                snake.growth_pending += self.drug_growth 
+                
+                # Energy effect of eating the drug --> reset energy to max
+                if self.drug_resets_energy:
+                    snake.energy = self.max_energy   # Reset the energy to max 
+                    snake.energy -= self.drug_reward * self.drug_energy_penalty_factor # Apply energy penalty based on the drug reward and the specified penalty factor
+                    snake.energy = max(0, snake.energy)
 
                 # Remove the drug that was eaten
                 self.drug_positions.pop(i)
