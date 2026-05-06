@@ -10,7 +10,7 @@ class Controller():
     grid.py --> managing of the pixel representation of the board
     """
 
-    def __init__(self, grid_size=[30,30], unit_size=10, unit_gap=1, snake_size=3, n_snakes=1, n_foods=1, random_init=True):
+    def __init__(self, grid_size=[30,30], unit_size=10, unit_gap=1, snake_size=3, n_snakes=1, n_foods=1, max_energy=100,  step_energy_cost=1, random_init=True):
         """
         Initialisation function
         --> When a new Controller object is instantiated, this function sets up the entire game board
@@ -29,10 +29,15 @@ class Controller():
         # Initialise the snakes
         self.snakes = []
         self.dead_snakes = []
+
+        #Initial energy levels and energy cost of snake
+        self.max_energy = max_energy
+        self.step_energy_cost = step_energy_cost        
+
         # Loop through the amount of snakes we want
         for i in range(1,n_snakes+1):
             start_coord = [i*grid_size[0]//(n_snakes+1), snake_size+1]   # Initialise the start coordinates of the snakes
-            self.snakes.append(Snake(start_coord, snake_size))  # Initialise the snakes themselves and append them to the list of snakes we have
+            self.snakes.append(Snake(start_coord, snake_size, max_energy=self.max_energy)) # Initialise the snakes themselves and append them to the list of snakes we have
             color = [self.grid.HEAD_COLOR[0], i*10, 255]    # If we work with multiple snakes --> give each head a different color  
             self.snakes[-1].head_color = color  # Assign the colors to the different snakes
             self.grid.draw_snake(self.snakes[-1], color)    # Paint the snakes on the board
@@ -80,8 +85,12 @@ class Controller():
         if type(snake) == type(None):
             return 0
 
+        # Substract energy for every step taken
+        snake.energy -= self.step_energy_cost
+
         # Check for death of snake --> has snake's head landed on a wall or another part of the snake?
-        if self.grid.check_death(snake.head):
+        # Extra condition for death --> has the snake's energy dropped to 0 or below?
+        if self.grid.check_death(snake.head) or snake.energy <= 0:
             self.dead_snakes[snake_idx] = self.snakes[snake_idx]    # move snake to the dead list
             self.snakes[snake_idx] = None   # replace snake object in active snakes list with a None
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space
@@ -95,6 +104,7 @@ class Controller():
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space & paints head color over the food tile
             reward = 1
             self.grid.new_food() # since old food has been eating --> spawn new food on the grid
+            snake.energy = self.max_energy # Reset energy to max after eating food
 
         # If the snake did not die and did not take food, this happens  
         else:

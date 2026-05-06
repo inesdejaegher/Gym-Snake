@@ -30,6 +30,8 @@ class SnakeEnv(gym.Env):
     DRUG_REWARD = 6
     DRUG_GROWTH = 6
     N_DRUGS = 0
+    MAX_ENERGY = 100
+    STEP_ENERGY_COST = 1    
 
     def __init__(
         self,
@@ -42,7 +44,9 @@ class SnakeEnv(gym.Env):
         n_drugs=None,
         random_init=True,
         drug_reward=None,
-        drug_growth=None):
+        drug_growth=None,
+        max_energy=None,
+        step_energy_cost=None):
         """
         Initialisation function
         --> Setting Instance Variables = assigns grid dimensions, game settings and the drug parameters to the instance
@@ -61,12 +65,15 @@ class SnakeEnv(gym.Env):
         self.n_drugs = self.N_DRUGS if n_drugs is None else n_drugs
         self.drug_reward = self.DRUG_REWARD if drug_reward is None else drug_reward
         self.drug_growth = self.DRUG_GROWTH if drug_growth is None else drug_growth
+        self.max_energy = self.MAX_ENERGY if max_energy is None else max_energy
+        self.step_energy_cost = self.STEP_ENERGY_COST if step_energy_cost is None else step_energy_cost
+
         self.viewer = None
         self.random_init = random_init
-
         self.action_space = spaces.Discrete(4)
 
         # IMPORTANT: Controller does NOT take n_drugs
+        # IT DOES TAKE MAX_ENERGY and STEP_ENERGY_COST 
         controller = Controller(
             self.grid_size,
             self.unit_size,
@@ -74,6 +81,8 @@ class SnakeEnv(gym.Env):
             self.snake_size,
             self.n_snakes,
             self.n_foods,
+            max_energy=self.max_energy,
+            step_energy_cost=self.step_energy_cost,
             random_init=self.random_init
         )
 
@@ -265,6 +274,8 @@ class SnakeEnv(gym.Env):
             self.snake_size,
             self.n_snakes,
             self.n_foods,
+            max_energy=self.max_energy,
+            step_energy_cost=self.step_energy_cost,
             random_init=self.random_init
         )
 

@@ -11,8 +11,8 @@ CSV_PATH = os.path.join(
     os.path.dirname(__file__),
     "..",
     "Results",
-    "Drugs_No_Growth",
-    "Evaluation_Results_logbook_q_table_drug_reward_5_no_growth_TIME_04_05_2026_17-49-32.csv"
+    "Baseline_Energy",
+    "Evaluation_Results_logbook_q_table_baseline_energy_EP_5000_TIME_06_05_2026_20-10-48.csv"
 )
 
 METRICS = [
