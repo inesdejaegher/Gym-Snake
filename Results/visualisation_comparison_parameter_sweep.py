@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ def plot_drug_reward_boxplots(results_folder):
 
     def extract_reward(path):
         #Extract the reward value from the filename
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
+        match = re.search(r"drug_reward_(\d+)_no_growth", path.stem)
         return int(match.group(1)) if match else None
 
     # Get and sort CSV files
@@ -23,7 +24,7 @@ def plot_drug_reward_boxplots(results_folder):
     csv_files = sorted(csv_files, key=extract_reward)
 
     if len(csv_files) == 0:
-        raise FileNotFoundError(f"No drug with-growth evaluation CSV files found in: {results_folder}")
+        raise FileNotFoundError(f"No drug NO-growth evaluation CSV files found in: {results_folder}")
 
     rewards = sorted({extract_reward(f) for f in csv_files})
     labels = [f"Reward {r}" for r in rewards]
@@ -71,6 +72,8 @@ def plot_drug_reward_boxplots(results_folder):
         plt.title(f"{metric} per game by Drug Reward")
         plt.xlabel("Drug Reward")
         plt.ylabel(metric)
+        if metric == "Drugs_Consumed":
+            plt.ylim([0,150])
         plt.grid(axis="y", alpha=0.3)
 
         plt.tight_layout()
@@ -81,7 +84,7 @@ def plot_food_vs_drugs(results_folder):
     results_folder = Path(results_folder)
 
     def extract_reward(path):
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
+        match = re.search(r"drug_reward_(\d+)_no_growth", path.stem)
         return int(match.group(1)) if match else None
 
     csv_files = [
@@ -147,7 +150,7 @@ def plot_loop_death_rate(results_folder):
     results_folder = Path(results_folder)
 
     def extract_reward(path):
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
+        match = re.search(r"drug_reward_(\d+)_no_growth", path.stem)
         return int(match.group(1)) if match else None
 
     csv_files = [
@@ -202,6 +205,6 @@ def plot_loop_death_rate(results_folder):
     plt.show()
 
 if __name__ == "__main__":
-    plot_drug_reward_boxplots(Path(__file__).resolve().parent / "Drugs_With_Growth")
-    plot_food_vs_drugs(Path(__file__).resolve().parent / "Drugs_With_Growth")
-    plot_loop_death_rate(Path(__file__).resolve().parent / "Drugs_With_Growth")
+    plot_drug_reward_boxplots(Path(__file__).resolve().parent / "Drugs_No_Growth")
+    plot_food_vs_drugs(Path(__file__).resolve().parent / "Drugs_No_Growth")
+    plot_loop_death_rate(Path(__file__).resolve().parent / "Drugs_No_Growth")

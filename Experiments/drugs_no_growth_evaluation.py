@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO,
 # -----------------------------
 # ----- PARAMETERS TO SET -----
 # -----------------------------
-eval_episodes = 100
+eval_episodes = 1000
 max_steps_without_consumption = 100
 
 
