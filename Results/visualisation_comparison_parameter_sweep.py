@@ -181,14 +181,17 @@ def plot_loop_death_rate(results_folder, condition_suffix="no_growth", ylim=None
     plt.show()
 
 if __name__ == "__main__":
-    results_folder = Path(__file__).resolve().parent / "Drugs_No_Energy_Penalty"
-    condition_suffix = "no_energy_penalty"
+    results_folder = Path(__file__).resolve().parent / "Drugs_With_Energy_Penalty"
+    condition_suffix = "energy_penalty_factor_9"
 
     plot_drug_reward_boxplots(
         results_folder,
         condition_suffix=condition_suffix,
-        ylims={"Drugs_Consumed": (0, 150)}
+        ylims={
+            "Drugs_Consumed": (0, 150),
+            "Food_Consumed": (0, 150),
+            "Snake_Length": (0, 100),
+        }
     )
     plot_food_vs_drugs(results_folder, condition_suffix=condition_suffix)
     plot_loop_death_rate(results_folder, condition_suffix=condition_suffix, ylim=(0, 100))
-

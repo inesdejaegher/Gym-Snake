@@ -16,22 +16,22 @@ from helper_func import get_discrete_state
 
 # Define different conditions for the simulation loop
 conditions = [
-    {"name": "drug_reward_1_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 1, "drug_growth": 0},
-    {"name": "drug_reward_2_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 2, "drug_growth": 0},
-    {"name": "drug_reward_3_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 3, "drug_growth": 0},
-    {"name": "drug_reward_4_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 4, "drug_growth": 0},
-    {"name": "drug_reward_5_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 5, "drug_growth": 0},
-    {"name": "drug_reward_6_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 6, "drug_growth": 0},
-    {"name": "drug_reward_7_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 0},
-    {"name": "drug_reward_8_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 0},
-    {"name": "drug_reward_9_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 0},
-    {"name": "drug_reward_10_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 0},
+    {"name": "drug_reward_1_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 1, "drug_growth": 0},
+    {"name": "drug_reward_2_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 2, "drug_growth": 0},
+    {"name": "drug_reward_3_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 3, "drug_growth": 0},
+    {"name": "drug_reward_4_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 4, "drug_growth": 0},
+    {"name": "drug_reward_5_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 5, "drug_growth": 0},
+    {"name": "drug_reward_6_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 6, "drug_growth": 0},
+    {"name": "drug_reward_7_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 0},
+    {"name": "drug_reward_8_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 0},
+    {"name": "drug_reward_9_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 0},
+    {"name": "drug_reward_10_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 0},
 
-    {"name": "drug_reward_15_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 0},
-    {"name": "drug_reward_20_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 0},
-    {"name": "drug_reward_25_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 25, "drug_growth": 0},
+    {"name": "drug_reward_15_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 0},
+    #{"name": "drug_reward_20_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 0},
+    #{"name": "drug_reward_25_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 25, "drug_growth": 0},
 
-    {"name": "drug_reward_100_no_energy_penalty", "n_foods": 1, "n_drugs": 1, "drug_reward": 100, "drug_growth": 0}
+    #{"name": "drug_reward_100_energy_penalty_factor_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 100, "drug_growth": 0}
 ]
 
 # Configure logging
@@ -47,10 +47,10 @@ def run_simulation(condition):
     # ----- INITIALISATION -----
     # --------------------------
     # Initialise storage of simulation results
-    q_table_name = f"q_table_{condition['name']}_EP_1000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+    q_table_name = f"q_table_{condition['name']}_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
     # Dynamically locate the Q-Table folder one directory up from this script
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Energy_Penalty")
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_With_Energy_Penalty")
     os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
     full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
@@ -67,10 +67,11 @@ def run_simulation(condition):
     base_env.step_energy_cost = 1
     base_env.max_energy = 100      
     base_env.drug_resets_energy = True # Ensure drugs reset energy to max when consumed
-    base_env.drug_energy_penalty_factor = 0 # No energy penalty for consuming drugs in this condition
+    base_env.drug_energy_penalty_factor = 9 # Drug energy penalty = drug_reward * 9
+
 
     # ----- Q-Learning Hyperparameters -----
-    episodes = 1000         # Total games to play
+    episodes = 5000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games
