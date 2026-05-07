@@ -30,7 +30,7 @@ class Snake():
     DOWN = 2
     LEFT = 3
 
-    def __init__(self, head_coord_start, length=3):
+    def __init__(self, head_coord_start, length=3, max_energy = 100):
         """
         Function to build the snake as the game starts. It takes as arguments the coordinates of the 
         head of the snake and the initial length of the snake.
@@ -53,6 +53,10 @@ class Snake():
         # Build the snake's initial body pointing straight UP from the head
         for i in range(length-1, 0, -1):
             self.body.append(self.head-np.asarray([0,i]).astype(int))
+
+        # Energy management
+        self.max_energy = max_energy
+        self.energy = max_energy
 
     def step(self, coord, direction):
         """

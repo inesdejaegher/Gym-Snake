@@ -22,8 +22,8 @@ logging.basicConfig(level=logging.INFO,
 # -----------------------------
 # ----- PARAMETERS TO SET -----
 # -----------------------------
-eval_episodes = 1000
-max_steps_without_consumption = 100
+eval_episodes = 500
+# max_steps_without_consumption = 100
 
 
 def extract_drug_reward(q_table_path):
@@ -31,11 +31,11 @@ def extract_drug_reward(q_table_path):
     Extracts the drug reward from a Q-table filename.
 
     Example:
-    q_table_drug_reward_25_no_growth_EP_5000_TIME_04_05_2026_17-49-47.pkl
+    q_table_drug_reward_10_energy_penalty_factor_9_EP_5000_TIME_04_05_2026_17-49-47.pkl
     returns 25.
     """
     q_table_name = os.path.basename(q_table_path)
-    match = re.search(r"drug_reward_(\d+)_no_growth", q_table_name)
+    match = re.search(r"drug_reward_(\d+)_energy_penalty_factor_9", q_table_name)
 
     if match is None:
         raise ValueError(f"Could not extract drug reward from: {q_table_name}")
@@ -45,9 +45,9 @@ def extract_drug_reward(q_table_path):
 
 def find_q_tables(q_table_dir):
     """
-    Finds all no-growth drug Q-tables and sorts them by drug reward.
+    Finds all energy-penalty drug Q-tables and sorts them by drug reward.
     """
-    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_no_growth_EP_5000_TIME_*.pkl")
+    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_energy_penalty_factor_9_EP_*_TIME_*.pkl")
     q_table_paths = glob.glob(pattern)
     return sorted(q_table_paths, key=extract_drug_reward)
 
@@ -58,11 +58,11 @@ def evaluate_q_table(q_table_path):
     """
     q_table_name = os.path.basename(q_table_path)
     drug_reward = extract_drug_reward(q_table_path)
-    condition_name = f"drug_reward_{drug_reward}_no_growth"
+    condition_name = f"drug_reward_{drug_reward}_energy_penalty_factor_9"
 
     # ----- STORAGE FOLDER FOR RESULTS -----
     csv_name = f"Evaluation_Results_logbook_{q_table_name.replace('.pkl', '.csv')}"
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Growth")
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_With_Energy_Penalty")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
 
@@ -82,6 +82,10 @@ def evaluate_q_table(q_table_path):
     base_env.n_drugs = 1
     base_env.drug_reward = drug_reward
     base_env.drug_growth = 0
+    base_env.max_energy = 100
+    base_env.step_energy_cost = 1
+    base_env.drug_resets_energy = True
+    base_env.drug_energy_penalty_factor = 9
 
     # -----------------------------------
     # ----- Run the evaluation loop -----
@@ -144,11 +148,11 @@ def evaluate_q_table(q_table_path):
             # env.render()
             # time.sleep(0.05)  # Slow down the frames slightly to make it watchable
 
-            # ----- LOOP PREVENTION -----
-            if steps_without_consumption > max_steps_without_consumption:
-                logging.info(f"{condition_name}: agent stuck in a loop. Forcing episode end.")
-                loop = 1
-                break
+            # ----- LOOP PREVENTION: NOT NEEDED WITH THE NEW ENERGY TRACKER -----
+            # if steps_without_consumption > max_steps_without_consumption:
+            #     logging.info(f"{condition_name}: agent stuck in a loop. Forcing episode end.")
+            #     loop = 1
+            #     break
 
         # --- SAVE EPISODE RESULTS ---
         logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, snake_length, steps, loop)
@@ -164,13 +168,13 @@ def evaluate_q_table(q_table_path):
 
 
 if __name__ == "__main__":
-    # Find all no-growth drug Q-tables in the specified directory
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
+    # Find all energy-penalty drug Q-tables in the specified directory
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_With_Energy_Penalty")
     q_table_paths = find_q_tables(q_table_dir)
 
     # Check if any Q-tables were found
     if len(q_table_paths) == 0:
-        raise FileNotFoundError(f"No no-growth drug Q-tables found in: {q_table_dir}")
+        raise FileNotFoundError(f"No energy-penalty drug Q-tables found in: {q_table_dir}")
 
     # Evaluate each Q-table
     for q_table_path in q_table_paths:

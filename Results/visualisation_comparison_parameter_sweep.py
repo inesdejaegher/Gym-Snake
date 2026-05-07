@@ -6,53 +6,63 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def plot_drug_reward_boxplots(results_folder):
+def extract_drug_reward(path, condition_suffix):
+    # Extract the reward value from filenames such as:
+    # Evaluation_Results_logbook_q_table_drug_reward_25_no_growth_EP_5000_TIME_...
+    match = re.search(rf"drug_reward_(\d+)_{condition_suffix}", path.stem)
+    return int(match.group(1)) if match else None
+
+
+def find_evaluation_csvs(results_folder, condition_suffix):
     results_folder = Path(results_folder)
-
-    def extract_reward(path):
-        #Extract the reward value from the filename
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
-        return int(match.group(1)) if match else None
-
-    # Get and sort CSV files
     csv_files = [
         csv_file
         for csv_file in results_folder.glob("*.csv")
-        if extract_reward(csv_file) is not None
+        if extract_drug_reward(csv_file, condition_suffix) is not None
     ]
-    csv_files = sorted(csv_files, key=extract_reward)
+
+    return sorted(
+        csv_files,
+        key=lambda csv_file: extract_drug_reward(csv_file, condition_suffix)
+    )
+
+
+def load_evaluation_results(results_folder, condition_suffix):
+    results_folder = Path(results_folder)
+    csv_files = find_evaluation_csvs(results_folder, condition_suffix)
 
     if len(csv_files) == 0:
-        raise FileNotFoundError(f"No drug with-growth evaluation CSV files found in: {results_folder}")
+        raise FileNotFoundError(
+            f"No drug evaluation CSV files with suffix '{condition_suffix}' found in: {results_folder}"
+        )
 
-    rewards = sorted({extract_reward(f) for f in csv_files})
+    all_dfs = []
+    for csv_file in csv_files:
+        reward = extract_drug_reward(csv_file, condition_suffix)
+        df = pd.read_csv(csv_file)
+        df["Drug_Reward"] = reward
+        all_dfs.append(df)
+
+    return pd.concat(all_dfs, ignore_index=True)
+
+
+def plot_drug_reward_boxplots(results_folder, condition_suffix="no_growth", metrics=None, ylims=None):
+    full_df = load_evaluation_results(results_folder, condition_suffix)
+    rewards = sorted(full_df["Drug_Reward"].unique())
     labels = [f"Reward {r}" for r in rewards]
-
-    # Load data and group repeated evaluations of the same reward together.
-    dfs_by_reward = {
-        reward: [
-            pd.read_csv(csv_file)
-            for csv_file in csv_files
-            if extract_reward(csv_file) == reward
+    if metrics is None:
+        metrics = [
+            "Drugs_Consumed",
+            "Food_Consumed",
+            "Total_Reward",
+            "Snake_Length"
         ]
-        for reward in rewards
-    }
-
-    metrics = [
-        "Drugs_Consumed",
-        "Food_Consumed",
-        "Total_Reward",
-        "Snake_Length"
-    ]
 
     # Create one figure per metric
     for metric in metrics:
         data = []
         for reward in rewards:
-            reward_data = pd.concat(
-                [df[metric] for df in dfs_by_reward[reward]],
-                ignore_index=True
-            ).dropna()
+            reward_data = full_df.loc[full_df["Drug_Reward"] == reward, metric].dropna()
             data.append(reward_data)
 
         plt.figure(figsize=(12, 5))
@@ -71,34 +81,16 @@ def plot_drug_reward_boxplots(results_folder):
         plt.title(f"{metric} per game by Drug Reward")
         plt.xlabel("Drug Reward")
         plt.ylabel(metric)
+        if ylims is not None and metric in ylims and ylims[metric] is not None:
+            plt.ylim(ylims[metric])
         plt.grid(axis="y", alpha=0.3)
 
         plt.tight_layout()
         plt.show()
 
 
-def plot_food_vs_drugs(results_folder):
-    results_folder = Path(results_folder)
-
-    def extract_reward(path):
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
-        return int(match.group(1)) if match else None
-
-    csv_files = [
-        f for f in results_folder.glob("*.csv")
-        if extract_reward(f) is not None
-    ]
-
-    all_dfs = []
-
-    for csv_file in csv_files:
-        reward = extract_reward(csv_file)
-        df = pd.read_csv(csv_file)
-        df["Drug_Reward"] = reward
-        all_dfs.append(df)
-
-    full_df = pd.concat(all_dfs, ignore_index=True)
-
+def plot_food_vs_drugs(results_folder, condition_suffix="no_growth", xlim=None, ylim=None):
+    full_df = load_evaluation_results(results_folder, condition_suffix)
     summary = (
         full_df
         .groupby("Drug_Reward")
@@ -138,33 +130,18 @@ def plot_food_vs_drugs(results_folder):
     plt.xlabel("Mean Food Consumed")
     plt.ylabel("Mean Drugs Consumed")
     plt.title("Food–Drug Trade-off (Means Only)")
+    if xlim is not None:
+        plt.xlim(xlim)
+    if ylim is not None:
+        plt.ylim(ylim)
     plt.grid(alpha=0.3)
 
     plt.tight_layout()
     plt.show()
 
-def plot_loop_death_rate(results_folder):
-    results_folder = Path(results_folder)
 
-    def extract_reward(path):
-        match = re.search(r"drug_reward_(\d+)_growth", path.stem)
-        return int(match.group(1)) if match else None
-
-    csv_files = [
-        f for f in results_folder.glob("*.csv")
-        if extract_reward(f) is not None
-    ]
-
-    all_dfs = []
-
-    for csv_file in csv_files:
-        reward = extract_reward(csv_file)
-        df = pd.read_csv(csv_file)
-        df["Drug_Reward"] = reward
-        all_dfs.append(df)
-
-    full_df = pd.concat(all_dfs, ignore_index=True)
-
+def plot_loop_death_rate(results_folder, condition_suffix="no_growth", ylim=None):
+    full_df = load_evaluation_results(results_folder, condition_suffix)
     summary = (
         full_df
         .groupby("Drug_Reward")
@@ -197,11 +174,24 @@ def plot_loop_death_rate(results_folder):
     plt.xlabel("Drug Reward")
     plt.ylabel("Loop Death Rate (%)")
     plt.title("Percentage of Evaluations Ending in Loop Death")
+    if ylim is not None:
+        plt.ylim(ylim)
     plt.grid(axis="y", alpha=0.3)
     plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
-    plot_drug_reward_boxplots(Path(__file__).resolve().parent / "Drugs_With_Growth")
-    plot_food_vs_drugs(Path(__file__).resolve().parent / "Drugs_With_Growth")
-    plot_loop_death_rate(Path(__file__).resolve().parent / "Drugs_With_Growth")
+    results_folder = Path(__file__).resolve().parent / "Drugs_With_Energy_Penalty"
+    condition_suffix = "energy_penalty_factor_9"
+
+    plot_drug_reward_boxplots(
+        results_folder,
+        condition_suffix=condition_suffix,
+        ylims={
+            "Drugs_Consumed": (0, 150),
+            "Food_Consumed": (0, 150),
+            "Snake_Length": (0, 100),
+        }
+    )
+    plot_food_vs_drugs(results_folder, condition_suffix=condition_suffix)
+    plot_loop_death_rate(results_folder, condition_suffix=condition_suffix, ylim=(0, 100))

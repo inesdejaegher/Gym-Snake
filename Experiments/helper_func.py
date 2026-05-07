@@ -68,8 +68,20 @@ def get_discrete_state(env):
     danger_down = int(controller.grid.check_death((head_x, head_y + 1)))
     danger_left = int(controller.grid.check_death((head_x - 1, head_y)))
     
+    # 5. Check energy levels. Discretize into buckets to keep the state space manageable.
+    # --> 3: High, 2: Medium, 1: Low, 0: Critical
+    energy = snake.energy
+    if energy > 75:
+        energy_level = 3
+    elif energy > 50:
+        energy_level = 2
+    elif energy > 25:
+        energy_level = 1
+    else:
+        energy_level = 0
+
     # Return the simple tuple which will be used as a dictionary key in our Q-Table
-    return (food_dir_x, food_dir_y, drug_dir_x, drug_dir_y, danger_up, danger_right, danger_down, danger_left)
+    return (food_dir_x, food_dir_y, drug_dir_x, drug_dir_y, danger_up, danger_right, danger_down, danger_left, energy_level)
 
 def logbook_simulation(file_path, episode, n_drugs_consumed, n_food_consumed, total_reward, snake_length, steps, loop):
     """
