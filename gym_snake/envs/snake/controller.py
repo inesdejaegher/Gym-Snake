@@ -89,7 +89,8 @@ class Controller():
         snake.energy -= self.step_energy_cost
 
         # Check for death of snake --> has snake's head landed on a wall or another part of the snake?
-        if self.grid.check_death(snake.head):
+        # Extra condition for death --> has the snake's energy dropped to 0 or below?
+        if self.grid.check_death(snake.head) or snake.energy <= 0:
             self.dead_snakes[snake_idx] = self.snakes[snake_idx]    # move snake to the dead list
             self.snakes[snake_idx] = None   # replace snake object in active snakes list with a None
             self.grid.cover(snake.head, snake.head_color) # Avoid miscount of grid.open_space

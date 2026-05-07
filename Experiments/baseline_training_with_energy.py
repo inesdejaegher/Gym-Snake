@@ -24,10 +24,17 @@ logging.basicConfig(level=logging.INFO,
 # ----- INITIALISATION -----
 # --------------------------
 # Initialise storage of simulation results
+<<<<<<< HEAD
 q_table_name = f"Q_base_energy_EP_5k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
 # Dynamically locate the Q-Table folder one directory up from this script
 q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base_Energy")
+=======
+q_table_name = f"q_table_baseline_energy_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+
+# Dynamically locate the Q-Table folder one directory up from this script
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline_Energy")
+>>>>>>> 75bc6d2a5568e4f196ecb51c4f6a7e77efaf4001
 os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
