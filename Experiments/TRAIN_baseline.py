@@ -12,59 +12,38 @@ import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import get_discrete_state, logbook_simulation
+from helper_func import get_discrete_state
 
-# Define different conditions for the simulation loop
-conditions = [
-    {"name": "drug_reward_1_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 1, "drug_growth": 0},
-    {"name": "drug_reward_2_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 2, "drug_growth": 0},
-    {"name": "drug_reward_3_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 3, "drug_growth": 0},
-    {"name": "drug_reward_4_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 4, "drug_growth": 0},
-    {"name": "drug_reward_5_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 5, "drug_growth": 0},
-    {"name": "drug_reward_6_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 6, "drug_growth": 0},
-    {"name": "drug_reward_7_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 0},
-    {"name": "drug_reward_8_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 0},
-    {"name": "drug_reward_9_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 0},
-    {"name": "drug_reward_10_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 0},
-
-    {"name": "drug_reward_15_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 0},
-    {"name": "drug_reward_20_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 0},
-    {"name": "drug_reward_25_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 25, "drug_growth": 0},
-
-    {"name": "drug_reward_50_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 50, "drug_growth": 0},
-    {"name": "drug_reward_100_no_growth", "n_foods": 1, "n_drugs": 1, "drug_reward": 100, "drug_growth": 0}
-]
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+# --------------------------
+# ----- INITIALISATION -----
+# --------------------------
+# Initialise storage of simulation results
+q_table_name = f"BASE_Q_EP5k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+
+# Dynamically locate the Q-Table folder one directory up from this script
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base")
+os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
+full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
 
-def run_simulation(condition):
-
-    # --------------------------
-    # ----- INITIALISATION -----
-    # --------------------------
-    # Initialise storage of simulation results
-    q_table_name = f"q_table_{condition['name']}_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
-
-    # Dynamically locate the Q-Table folder one directory up from this script
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
-    os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
-    full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
-
-    # Initialize the drug simulation environment
+if __name__ == "__main__":
+    
+    # Initialize the baseline environment
     env = gym.make('snake-v0')
     
     # Access the unwrapped base environment to safely change parameters before reset
     base_env = env.unwrapped
     base_env.grid_size = [10, 10]  # Smaller grid speeds up initial tabular learning
-    base_env.n_foods = condition["n_foods"]
-    base_env.n_drugs = condition["n_drugs"]
-    base_env.drug_reward = condition["drug_reward"]
-    base_env.drug_growth = condition["drug_growth"]
+    base_env.n_foods = 1           # Baseline scenario: strictly 1 food
+    base_env.n_drugs = 0           # Baseline scenario: no drugs
+    base_env.drug_reward = 0       # Baseline scenario: drugs have no effect
+    base_env.drug_growth = 0       # Baseline scenario: drugs give no growth
 
     
     # ----- Q-Learning Hyperparameters -----
@@ -73,16 +52,15 @@ def run_simulation(condition):
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games
     epsilon_min = 0.01      # The minimum randomness we allow, ensuring it always explores a tiny bit
-    epsilon_decay = 0.01**(1/(0.9*episodes))    # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
-
+    epsilon_decay = 0.01**(1/(0.9*episodes))   # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
     
-    # ----- INITIALISE Q-TABLE -----
+    # Initialize the Q-table
     # A dictionary where:
     # - Key = The discrete state tuple we extracted above
     # - Value = A numpy array of 4 numbers, representing the "expected value" (Q-value) of moving UP, RIGHT, DOWN, LEFT
     q_table = {}
 
-    logging.info("Starting Q-Learning Training...")
+    logging.info("Starting Baseline No Energy Q-Learning Training...")
 
     # --------------------------
     # ----- TRAINING LOOP -----
@@ -120,6 +98,7 @@ def run_simulation(condition):
             # Take the action in the environment and see what happens
             obs, reward, done, info = env.step(action)
             
+            # ----- TRACKING -----
             # Track consumed drugs by looking at the info dictionary returned by the environment
             if info.get("drug_eaten", False):
                 drugs_eaten_this_ep += 1
@@ -155,10 +134,10 @@ def run_simulation(condition):
             total_reward += reward
             
             # Visually render the environment for the last 5 episodes so we can watch what it learned
-            #if episode >= episodes - 5:
-                #env.render()
-                #time.sleep(0.05) # Slow it down slightly so we can watch it
-                
+            # if episode >= episodes - 5:
+                # env.render()
+                # time.sleep(0.05) # Slow it down slightly so we can watch it
+
         # At the end of every episode, decay epsilon so the agent explores less as it gets smarter
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
@@ -166,8 +145,8 @@ def run_simulation(condition):
         if (episode + 1) % 100 == 0:
             logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")
             
-    logging.info(f"Training complete for: {condition['name']}")
-    
+    logging.info("Training Complete!")
+
     # Save the Q-table to a file
     with open(full_q_table_path, "wb") as f:
         pickle.dump(q_table, f)
@@ -176,10 +155,3 @@ def run_simulation(condition):
     
     # Clean up the rendering window
     env.close()
-
-if __name__ == "__main__":
-    for condition in conditions:
-        logging.info(f"Starting Training for {condition['name']}...")
-        run_simulation(condition)
-        logging.info(f"Finished Training for {condition['name']}")
-        logging.info("------------------------------------------------------------------")

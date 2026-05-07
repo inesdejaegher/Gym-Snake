@@ -24,10 +24,10 @@ logging.basicConfig(level=logging.INFO,
 # ----- INITIALISATION -----
 # --------------------------
 # Initialise storage of simulation results
-q_table_name = f"q_table_baseline_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+q_table_name = f"BASE_ENERGY_Q_EP5k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
 # Dynamically locate the Q-Table folder one directory up from this script
-q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline")
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base_Energy")
 os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     base_env.n_drugs = 0           # Baseline scenario: no drugs
     base_env.drug_reward = 0       # Baseline scenario: drugs have no effect
     base_env.drug_growth = 0       # Baseline scenario: drugs give no growth
-
+    base_env.max_energy = 100      # Baseline scenario: snake starts with 100 energy and can never exceed this amount (resets to this after eating food)
+    base_env.step_energy_cost = 1  # Baseline scenario: snake loses 1 energy for every step taken 
     
     # ----- Q-Learning Hyperparameters -----
     episodes = 5000         # Total games to play
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     # - Value = A numpy array of 4 numbers, representing the "expected value" (Q-value) of moving UP, RIGHT, DOWN, LEFT
     q_table = {}
 
-    logging.info("Starting Baseline Q-Learning Training...")
+    logging.info("Starting Baseline with Energy Q-Learning Training...")
 
     # --------------------------
     # ----- TRAINING LOOP -----
@@ -97,7 +98,7 @@ if __name__ == "__main__":
                 
             # Take the action in the environment and see what happens
             obs, reward, done, info = env.step(action)
-            
+
             # ----- TRACKING -----
             # Track consumed drugs by looking at the info dictionary returned by the environment
             if info.get("drug_eaten", False):
@@ -112,7 +113,12 @@ if __name__ == "__main__":
             # the environment deletes the snake object entirely and returns a length of 0.
             if info.get("snake_length", 0) > 0:
                 snake_length = info.get("snake_length", 0)
-
+            
+            #Track current energy level of the snake for this step (after taking the action)
+            snake = env.unwrapped.controller.snakes[0]
+            if snake is None:
+                snake = env.unwrapped.controller.dead_snakes[0]
+            current_energy = snake.energy if snake is not None else 0
             # Read the new state of the board after moving
             next_state = get_discrete_state(env)
             

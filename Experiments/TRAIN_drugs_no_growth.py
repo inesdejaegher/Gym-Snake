@@ -8,31 +8,31 @@ import time
 import datetime
 import logging
 import os
-import warnings
 import pickle
+import warnings
 warnings.filterwarnings("ignore")
 
-from helper_func import get_discrete_state
+from helper_func import get_discrete_state, logbook_simulation
 
 # Define different conditions for the simulation loop
 conditions = [
-    {"name": "drug_reward_1_growth_1", "n_foods": 1, "n_drugs": 1, "drug_reward": 1, "drug_growth": 1},
-    {"name": "drug_reward_2_growth_2", "n_foods": 1, "n_drugs": 1, "drug_reward": 2, "drug_growth": 2},
-    {"name": "drug_reward_3_growth_3", "n_foods": 1, "n_drugs": 1, "drug_reward": 3, "drug_growth": 3},
-    {"name": "drug_reward_4_growth_4", "n_foods": 1, "n_drugs": 1, "drug_reward": 4, "drug_growth": 4},
-    {"name": "drug_reward_5_growth_5", "n_foods": 1, "n_drugs": 1, "drug_reward": 5, "drug_growth": 5},
-    {"name": "drug_reward_6_growth_6", "n_foods": 1, "n_drugs": 1, "drug_reward": 6, "drug_growth": 6},
-    {"name": "drug_reward_7_growth_7", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 7},
-    {"name": "drug_reward_8_growth_8", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 8},
-    {"name": "drug_reward_9_growth_9", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 9},
-    {"name": "drug_reward_10_growth_10", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 10},
+    {"name": "DRUG_R1_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 1, "drug_growth": 0},
+    {"name": "DRUG_R2_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 2, "drug_growth": 0},
+    {"name": "DRUG_R3_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 3, "drug_growth": 0},
+    {"name": "DRUG_R4_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 4, "drug_growth": 0},
+    {"name": "DRUG_R5_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 5, "drug_growth": 0},
+    {"name": "DRUG_R6_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 6, "drug_growth": 0},
+    {"name": "DRUG_R7_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 0},
+    {"name": "DRUG_R8_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 0},
+    {"name": "DRUG_R9_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 0},
+    {"name": "DRUG_R10_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 0},
 
-    {"name": "drug_reward_15_growth_15", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 15},
-    {"name": "drug_reward_20_growth_20", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 20},
-    {"name": "drug_reward_25_growth_25", "n_foods": 1, "n_drugs": 1, "drug_reward": 25, "drug_growth": 25},
-    
-    {"name": "drug_reward_50_growth_50", "n_foods": 1, "n_drugs": 1, "drug_reward": 50, "drug_growth": 50},
-    {"name": "drug_reward_100_growth_100", "n_foods": 1, "n_drugs": 1, "drug_reward": 100, "drug_growth": 100}
+    {"name": "DRUG_R15_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 0},
+    {"name": "DRUG_R20_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 0},
+    {"name": "DRUG_R25_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 25, "drug_growth": 0},
+
+    {"name": "DRUG_R50_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 50, "drug_growth": 0},
+    {"name": "DRUG_R100_NO_GROWTH", "n_foods": 1, "n_drugs": 1, "drug_reward": 100, "drug_growth": 0}
 ]
 
 # Configure logging
@@ -48,10 +48,10 @@ def run_simulation(condition):
     # ----- INITIALISATION -----
     # --------------------------
     # Initialise storage of simulation results
-    q_table_name = f"q_table_{condition['name']}_EP_5000_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+    q_table_name = f"{condition['name']}_Q_EP5K_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
     # Dynamically locate the Q-Table folder one directory up from this script
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_With_Growth")
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Growth")
     os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
     full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
@@ -65,6 +65,10 @@ def run_simulation(condition):
     base_env.n_drugs = condition["n_drugs"]
     base_env.drug_reward = condition["drug_reward"]
     base_env.drug_growth = condition["drug_growth"]
+    base_env.step_energy_cost = 0
+    base_env.max_energy = 100      
+    base_env.drug_resets_energy = True # Ensure drugs reset energy to max when consumed
+    base_env.drug_energy_penalty_factor = 0 # No energy penalty for consuming drugs in this condition
 
     
     # ----- Q-Learning Hyperparameters -----
@@ -76,7 +80,7 @@ def run_simulation(condition):
     epsilon_decay = 0.01**(1/(0.9*episodes))    # Epsilon decays this much every episode, slowly transitioning from exploration to exploitation
 
     
-    # Initialize the Q-table
+    # ----- INITIALISE Q-TABLE -----
     # A dictionary where:
     # - Key = The discrete state tuple we extracted above
     # - Value = A numpy array of 4 numbers, representing the "expected value" (Q-value) of moving UP, RIGHT, DOWN, LEFT
@@ -120,7 +124,6 @@ def run_simulation(condition):
             # Take the action in the environment and see what happens
             obs, reward, done, info = env.step(action)
             
-            # ----- TRACKING -----
             # Track consumed drugs by looking at the info dictionary returned by the environment
             if info.get("drug_eaten", False):
                 drugs_eaten_this_ep += 1
