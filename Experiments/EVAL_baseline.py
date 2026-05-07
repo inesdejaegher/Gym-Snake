@@ -7,6 +7,7 @@ import datetime
 import gym
 import gym_snake
 import numpy as np
+import glob
 
 from helper_func import get_discrete_state, logbook_simulation
 
@@ -21,21 +22,29 @@ logging.basicConfig(level=logging.INFO,
 # -----------------------------
 # ----- PARAMETERS TO SET -----
 # -----------------------------
-# Path to stored Q-table
-q_table_name = "q_table_baseline_EP_5000_TIME_04_05_2026_15-34-11.pkl"
-csv_name = f"Evaluation_Results_logbook_" + q_table_name.replace(".pkl", ".csv")
-
 # Number of episodes we want to do evaluation on
-eval_episodes = 100
+eval_episodes = 500
 max_steps_without_consumption = 100
 
-
 # ----- STORAGE FOLDER FOR RESULTS -----
-q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline")
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base")
 os.makedirs(q_table_dir, exist_ok=True) 
+
+pattern = os.path.join(q_table_dir, "BASE_Q_EP*_TIME_*.pkl")
+q_table_paths = sorted(glob.glob(pattern))
+
+if len(q_table_paths) > 0:
+    q_table_path = q_table_paths[-1] # Gets the latest trained baseline
+    q_table_name = os.path.basename(q_table_path)
+else:
+    raise FileNotFoundError("No baseline Q-tables found!")
+
 q_table_path = os.path.join(q_table_dir, q_table_name) 
 
-csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Baseline")
+
+base_name = q_table_name.split("TIME_")[0] + "TIME"
+csv_name = f"EVAL_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Base")
 os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 
@@ -57,10 +66,14 @@ if __name__ == "__main__":
     base_env.n_drugs = 0           # Baseline scenario: no drugs
     base_env.drug_reward = 0       # Baseline scenario: drugs have no effect
     base_env.drug_growth = 0       # Baseline scenario: drugs give no growth
+    
+    base_env.max_energy = 100
+    base_env.step_energy_cost = 0
 
     # -----------------------------------
     # ----- Run the evaluation loop -----
     # -----------------------------------
+    logging.info("Starting Baseline No Energy Evaluation")
     for episode in range(eval_episodes):
         env.reset()
         state = get_discrete_state(env)

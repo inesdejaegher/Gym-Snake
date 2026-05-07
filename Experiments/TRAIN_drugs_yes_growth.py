@@ -25,7 +25,7 @@ conditions = [
     {"name": "DRUG_R7_GROWTH7", "n_foods": 1, "n_drugs": 1, "drug_reward": 7, "drug_growth": 7},
     {"name": "DRUG_R8_GROWTH8", "n_foods": 1, "n_drugs": 1, "drug_reward": 8, "drug_growth": 8},
     {"name": "DRUG_R9_GROWTH9", "n_foods": 1, "n_drugs": 1, "drug_reward": 9, "drug_growth": 9},
-    {"name": "DRUG_R10_GROWTH110", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 10},
+    {"name": "DRUG_R10_GROWTH10", "n_foods": 1, "n_drugs": 1, "drug_reward": 10, "drug_growth": 10},
 
     {"name": "DRUG_R15_GROWTH15", "n_foods": 1, "n_drugs": 1, "drug_reward": 15, "drug_growth": 15},
     {"name": "DRUG_R20_GROWTH20", "n_foods": 1, "n_drugs": 1, "drug_reward": 20, "drug_growth": 20},
@@ -48,7 +48,7 @@ def run_simulation(condition):
     # ----- INITIALISATION -----
     # --------------------------
     # Initialise storage of simulation results
-    q_table_name = f"{condition['name']}_Q_EP5K_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+    q_table_name = f"{condition['name']}_Q_EP15k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
     # Dynamically locate the Q-Table folder one directory up from this script
     q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Yes_Growth")
@@ -72,7 +72,7 @@ def run_simulation(condition):
 
     
     # ----- Q-Learning Hyperparameters -----
-    episodes = 5000         # Total games to play
+    episodes = 15000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games

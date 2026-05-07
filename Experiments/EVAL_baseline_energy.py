@@ -7,6 +7,7 @@ import datetime
 import gym
 import gym_snake
 import numpy as np
+import glob
 
 from helper_func import get_discrete_state, logbook_simulation
 
@@ -21,21 +22,29 @@ logging.basicConfig(level=logging.INFO,
 # -----------------------------
 # ----- PARAMETERS TO SET -----
 # -----------------------------
-# Path to stored Q-table
-q_table_name = "q_table_baseline_energy_EP_5000_TIME_06_05_2026_20-10-48.pkl"
-csv_name = f"Evaluation_Results_logbook_" + q_table_name.replace(".pkl", ".csv")
-
 # Number of episodes we want to do evaluation on
-eval_episodes = 100
+eval_episodes = 500
 #max_steps_without_consumption = 100
 
-
 # ----- STORAGE FOLDER FOR RESULTS -----
-q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Baseline_Energy")
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base_Energy")
 os.makedirs(q_table_dir, exist_ok=True) 
+
+pattern = os.path.join(q_table_dir, "BASE_ENERGY_Q_EP*_TIME_*.pkl")
+q_table_paths = sorted(glob.glob(pattern))
+
+if len(q_table_paths) > 0:
+    q_table_path = q_table_paths[-1] # Gets the latest trained baseline
+    q_table_name = os.path.basename(q_table_path)
+else:
+    raise FileNotFoundError("No baseline Q-tables found!")
+
 q_table_path = os.path.join(q_table_dir, q_table_name) 
 
-csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Baseline_Energy")
+base_name = q_table_name.split("TIME_")[0] + "TIME"
+csv_name = f"EVAL_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+
+csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Base_Energy")
 os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 
@@ -75,6 +84,7 @@ if __name__ == "__main__":
         steps = 0
         steps_without_food = 0
         loop = 0
+        last_known_energy = 100
         
         while not done:
             # --- PURE EXPLOITATION ---
@@ -88,6 +98,13 @@ if __name__ == "__main__":
                 
             # Take the action
             obs, reward, done, info = env.step(action)
+
+            # Grab the snake object
+            snake = env.unwrapped.controller.snakes[0] 
+    
+            # Only update our tracker if the snake actually exists in memory this frame
+            if snake is not None:
+                last_known_energy = snake.energy
             
             # ----- TRACK FOOD AND DRUGS EATEN DURING EPISODE -----
             ate_something = False
@@ -128,8 +145,8 @@ if __name__ == "__main__":
             # ----- RENDER EVALUATION -----
             # Render the game so we can watch the trained agent
             # Delete if not needed
-            # env.render()
-            # time.sleep(0.05)  # Slow down the frames slightly to make it watchable
+            #env.render()
+            #time.sleep(0.05)  # Slow down the frames slightly to make it watchable
             
             # ----- LOOP PREVENTION: NOT NEEDED WITH THE NEW ENERGY TRACKER -----
             # Prevent infinite loops if the agent gets stuck going in circles
@@ -145,7 +162,7 @@ if __name__ == "__main__":
             f"Baseline Energy | Evaluation Episode {episode + 1}/{eval_episodes} finished "
             f"| Total Reward: {total_reward} | Drugs: {drugs_eaten_this_ep} "
             f"| Food: {food_eaten_this_ep} | Snake Length: {snake_length} | Steps: {steps}"
-            f"| Final Energy: {current_energy}"
+            f"| Final Energy: {last_known_energy}"
         )
 
     env.close()

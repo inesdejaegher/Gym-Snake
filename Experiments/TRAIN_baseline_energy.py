@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO,
 # ----- INITIALISATION -----
 # --------------------------
 # Initialise storage of simulation results
-q_table_name = f"BASE_ENERGY_Q_EP5k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
+q_table_name = f"BASE_ENERGY_Q_EP15k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
 # Dynamically locate the Q-Table folder one directory up from this script
 q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base_Energy")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     base_env.step_energy_cost = 1  # Baseline scenario: snake loses 1 energy for every step taken 
     
     # ----- Q-Learning Hyperparameters -----
-    episodes = 5000         # Total games to play
+    episodes = 15000         # Total games to play
     alpha = 0.1             # Learning rate: How quickly the agent abandons old beliefs for new ones
     gamma = 0.95            # Discount factor: How much the agent cares about long-term vs short-term rewards (0 to 1)
     epsilon = 1.0           # Exploration rate: Starts at 100% so the agent completely randomizes its first games

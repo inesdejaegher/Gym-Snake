@@ -7,6 +7,9 @@ import warnings
 import gym
 import gym_snake
 import numpy as np
+import datetime
+import time
+
 
 from helper_func import get_discrete_state, logbook_simulation
 
@@ -31,11 +34,11 @@ def extract_drug_reward(q_table_path):
     Extracts the drug reward from a Q-table filename.
 
     Example:
-    q_table_drug_reward_25_no_energy_penalty_EP_5000_TIME_04_05_2026_17-49-47.pkl
-    returns 25.
+    "DRUG_R10_ENG_NO_PEN_Q_EP15K_TIME_XXX.pkl"
+    returns 10.
     """
     q_table_name = os.path.basename(q_table_path)
-    match = re.search(r"drug_reward_(\d+)_no_energy_penalty", q_table_name)
+    match = re.search(r"DRUG_R(\d+)_ENG_NO_PEN", q_table_name)
 
     if match is None:
         raise ValueError(f"Could not extract drug reward from: {q_table_name}")
@@ -45,9 +48,9 @@ def extract_drug_reward(q_table_path):
 
 def find_q_tables(q_table_dir):
     """
-    Finds all no-energy-penalty drug Q-tables and sorts them by drug reward.
+    Finds all energy no penalty drug Q-tables and sorts them by drug reward.
     """
-    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_no_energy_penalty_EP_*_TIME_*.pkl")
+    pattern = os.path.join(q_table_dir, "DRUG_R*_ENG_NO_PEN_Q_EP*_TIME_*.pkl")
     q_table_paths = glob.glob(pattern)
     return sorted(q_table_paths, key=extract_drug_reward)
 
@@ -58,11 +61,12 @@ def evaluate_q_table(q_table_path):
     """
     q_table_name = os.path.basename(q_table_path)
     drug_reward = extract_drug_reward(q_table_path)
-    condition_name = f"drug_reward_{drug_reward}_no_energy_penalty"
+    condition_name = f"DRUG_R{drug_reward}_ENG_NO_PEN"
 
     # ----- STORAGE FOLDER FOR RESULTS -----
-    csv_name = f"Evaluation_Results_logbook_{q_table_name.replace('.pkl', '.csv')}"
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Energy_Penalty")
+    base_name = q_table_name.split("TIME_")[0] + "TIME"
+    csv_name = f"EVAL_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_Energy_No_Penalty")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
 
@@ -102,6 +106,8 @@ def evaluate_q_table(q_table_path):
         steps = 0
         steps_without_consumption = 0
         loop = 0
+        last_known_energy = 100
+
 
         while not done:
             # --- PURE EXPLOITATION ---
@@ -111,6 +117,13 @@ def evaluate_q_table(q_table_path):
                 action = env.action_space.sample()
 
             obs, reward, done, info = env.step(action)
+
+            # Grab the snake object
+            snake = env.unwrapped.controller.snakes[0] 
+    
+            # Only update our tracker if the snake actually exists in memory this frame
+            if snake is not None:
+                last_known_energy = snake.energy
 
             # ----- TRACK FOOD AND DRUGS EATEN DURING EPISODE -----
             ate_something = False
@@ -161,6 +174,7 @@ def evaluate_q_table(q_table_path):
             f"{condition_name} | Evaluation Episode {episode + 1}/{eval_episodes} finished "
             f"| Total Reward: {total_reward} | Drugs: {drugs_eaten_this_ep} "
             f"| Food: {food_eaten_this_ep} | Snake Length: {snake_length} | Steps: {steps}"
+            f"| Final Energy: {last_known_energy}"
         )
 
     env.close()
@@ -169,12 +183,12 @@ def evaluate_q_table(q_table_path):
 
 if __name__ == "__main__":
     # Find all no-energy-penalty drug Q-tables in the specified directory
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_No_Energy_Penalty")
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Energy_No_Penalty")
     q_table_paths = find_q_tables(q_table_dir)
 
     # Check if any Q-tables were found
     if len(q_table_paths) == 0:
-        raise FileNotFoundError(f"No no-energy-penalty drug Q-tables found in: {q_table_dir}")
+        raise FileNotFoundError(f"No Energy-No-Penalty drug Q-tables found in: {q_table_dir}")
 
     # Evaluate each Q-table
     for q_table_path in q_table_paths:

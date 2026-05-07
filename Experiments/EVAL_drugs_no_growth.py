@@ -7,6 +7,9 @@ import warnings
 import gym
 import gym_snake
 import numpy as np
+import datetime
+import time
+
 
 from helper_func import get_discrete_state, logbook_simulation
 
@@ -22,7 +25,7 @@ logging.basicConfig(level=logging.INFO,
 # -----------------------------
 # ----- PARAMETERS TO SET -----
 # -----------------------------
-eval_episodes = 1000
+eval_episodes = 500
 max_steps_without_consumption = 100
 
 
@@ -31,11 +34,11 @@ def extract_drug_reward(q_table_path):
     Extracts the drug reward from a Q-table filename.
 
     Example:
-    q_table_drug_reward_25_no_growth_EP_5000_TIME_04_05_2026_17-49-47.pkl
-    returns 25.
+    "DRUG_R1_NO_GROWTH_Q_EPXXX_TIME_XXX.pkl"
+    returns 1.
     """
     q_table_name = os.path.basename(q_table_path)
-    match = re.search(r"drug_reward_(\d+)_no_growth", q_table_name)
+    match = re.search(r"DRUG_R(\d+)_NO_GROWTH", q_table_name)
 
     if match is None:
         raise ValueError(f"Could not extract drug reward from: {q_table_name}")
@@ -47,7 +50,7 @@ def find_q_tables(q_table_dir):
     """
     Finds all no-growth drug Q-tables and sorts them by drug reward.
     """
-    pattern = os.path.join(q_table_dir, "q_table_drug_reward_*_no_growth_EP_5000_TIME_*.pkl")
+    pattern = os.path.join(q_table_dir, "DRUG_R*_NO_GROWTH_Q_EP*_TIME_*.pkl")
     q_table_paths = glob.glob(pattern)
     return sorted(q_table_paths, key=extract_drug_reward)
 
@@ -58,10 +61,11 @@ def evaluate_q_table(q_table_path):
     """
     q_table_name = os.path.basename(q_table_path)
     drug_reward = extract_drug_reward(q_table_path)
-    condition_name = f"drug_reward_{drug_reward}_no_growth"
+    condition_name = f"DRUG_R{drug_reward}_NO_GROWTH"
 
     # ----- STORAGE FOLDER FOR RESULTS -----
-    csv_name = f"Evaluation_Results_logbook_{q_table_name.replace('.pkl', '.csv')}"
+    base_name = q_table_name.split("TIME_")[0] + "TIME"
+    csv_name = f"EVAL_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
     csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Drugs_No_Growth")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
@@ -82,6 +86,9 @@ def evaluate_q_table(q_table_path):
     base_env.n_drugs = 1
     base_env.drug_reward = drug_reward
     base_env.drug_growth = 0
+    
+    base_env.max_energy = 100
+    base_env.step_energy_cost = 0
 
     # -----------------------------------
     # ----- Run the evaluation loop -----
