@@ -8,8 +8,13 @@ import matplotlib.pyplot as plt
 
 def extract_drug_reward(path, condition_suffix):
     # Extract the reward value from filenames such as:
+    # EVAL_DRUG_R25_NO_GROWTH_Q_EP15k_TIME_...
     # Evaluation_Results_logbook_q_table_drug_reward_25_no_growth_EP_5000_TIME_...
-    match = re.search(rf"drug_reward_(\d+)_{condition_suffix}", path.stem)
+    match = re.search(
+        rf"(?:DRUG_R|drug_reward_)(\d+)_{re.escape(condition_suffix)}",
+        path.stem,
+        flags=re.IGNORECASE
+    )
     return int(match.group(1)) if match else None
 
 
@@ -181,8 +186,8 @@ def plot_loop_death_rate(results_folder, condition_suffix="no_growth", ylim=None
     plt.show()
 
 if __name__ == "__main__":
-    results_folder = Path(__file__).resolve().parent / "Drugs_With_Energy_Penalty"
-    condition_suffix = "energy_penalty_factor_9"
+    results_folder = Path(__file__).resolve().parent / "Drugs_Energy_Yes_Penalty"
+    condition_suffix = "ENG_PEN_FAC9"
 
     plot_drug_reward_boxplots(
         results_folder,
