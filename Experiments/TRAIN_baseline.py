@@ -10,6 +10,7 @@ import logging
 import os
 import pickle
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 warnings.filterwarnings("ignore")
 
 from helper_func import get_discrete_state
@@ -32,7 +33,7 @@ os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
 
-if __name__ == "__main__":
+def run_training():
     
     # Initialize the baseline environment
     env = gym.make('snake-v0')
@@ -172,3 +173,22 @@ if __name__ == "__main__":
     
     # Clean up the rendering window
     env.close()
+    return full_q_table_path
+
+
+if __name__ == "__main__":
+    logging.info("Starting 1 baseline training with 1 parallel worker...")
+
+    with ProcessPoolExecutor(max_workers=1) as executor:
+        future_to_name = {
+            executor.submit(run_training): "Baseline No Energy"
+        }
+
+        for future in as_completed(future_to_name):
+            name = future_to_name[future]
+            try:
+                q_table_path = future.result()
+                logging.info(f"Finished Training for {name}")
+                logging.info(f"Saved Q-table: {q_table_path}")
+            except Exception:
+                logging.exception(f"Training failed for {name}")

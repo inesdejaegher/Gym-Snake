@@ -10,6 +10,7 @@ import logging
 import os
 import pickle
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 warnings.filterwarnings("ignore")
 
 from helper_func import get_discrete_state, logbook_simulation
@@ -195,10 +196,24 @@ def run_simulation(condition):
     
     # Clean up the rendering window
     env.close()
+    return full_q_table_path
 
 if __name__ == "__main__":
-    for condition in conditions:
-        logging.info(f"Starting Training for {condition['name']}...")
-        run_simulation(condition)
-        logging.info(f"Finished Training for {condition['name']}")
-        logging.info("------------------------------------------------------------------")
+    max_workers = min(len(conditions), os.cpu_count() or 1)
+    logging.info(f"Starting {len(conditions)} trainings with {max_workers} parallel workers...")
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        future_to_condition = {
+            executor.submit(run_simulation, condition): condition
+            for condition in conditions
+        }
+
+        for future in as_completed(future_to_condition):
+            condition = future_to_condition[future]
+            try:
+                q_table_path = future.result()
+                logging.info(f"Finished Training for {condition['name']}")
+                logging.info(f"Saved Q-table: {q_table_path}")
+            except Exception:
+                logging.exception(f"Training failed for {condition['name']}")
+            logging.info("------------------------------------------------------------------")
