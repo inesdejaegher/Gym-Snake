@@ -62,6 +62,7 @@ if __name__ == "__main__":
     q_table = {}
 
     logging.info("Starting Baseline with Energy Q-Learning Training...")
+    training_start_time = time.time()
 
     # --------------------------
     # ----- TRAINING LOOP -----
@@ -149,7 +150,21 @@ if __name__ == "__main__":
 
         # Print progress to the console every 100 episodes
         if (episode + 1) % 100 == 0:
-            logging.info(f"Episode {episode + 1}/{episodes} | Epsilon: {epsilon:.3f} | Total Known States: {len(q_table)}")
+            elapsed = time.time() - training_start_time
+            episodes_done = episode + 1
+            avg_time_per_episode = elapsed / episodes_done
+            episodes_left = episodes - episodes_done
+            eta_seconds = avg_time_per_episode * episodes_left
+            eta_finish_time = datetime.datetime.now() + datetime.timedelta(seconds=eta_seconds)
+
+            logging.info(
+                f"Baseline Energy | Episode {episodes_done}/{episodes} "
+                f"| Epsilon: {epsilon:.3f} "
+                f"| Known States: {len(q_table)} "
+                f"| Elapsed: {elapsed/60:.1f} min "
+                f"| ETA: {eta_seconds/60:.1f} min "
+                f"| Finish around: {eta_finish_time.strftime('%H:%M:%S')}"
+            )
             
     logging.info("Training Complete!")
 
