@@ -9,6 +9,7 @@ import gym_snake
 import numpy as np
 import datetime
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 from helper_func import get_discrete_state, logbook_simulation
@@ -168,6 +169,7 @@ def evaluate_q_table(q_table_path):
 
     env.close()
     logging.info(f"Evaluation complete for: {condition_name}")
+    return full_csv_path
 
 
 if __name__ == "__main__":
@@ -179,6 +181,21 @@ if __name__ == "__main__":
     if len(q_table_paths) == 0:
         raise FileNotFoundError(f"No no-growth drug Q-tables found in: {q_table_dir}")
 
-    # Evaluate each Q-table
-    for q_table_path in q_table_paths:
-        evaluate_q_table(q_table_path)
+    # Evaluate each Q-table in parallel
+    max_workers = min(len(q_table_paths), os.cpu_count() or 1)
+    logging.info(f"Starting {len(q_table_paths)} evaluations with {max_workers} parallel workers...")
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        future_to_q_table = {
+            executor.submit(evaluate_q_table, q_table_path): q_table_path
+            for q_table_path in q_table_paths
+        }
+
+        for future in as_completed(future_to_q_table):
+            q_table_path = future_to_q_table[future]
+            try:
+                csv_path = future.result()
+                logging.info(f"Finished evaluation for: {os.path.basename(q_table_path)}")
+                logging.info(f"Saved CSV: {csv_path}")
+            except Exception:
+                logging.exception(f"Evaluation failed for: {os.path.basename(q_table_path)}")
