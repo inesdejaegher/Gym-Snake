@@ -6,15 +6,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def extract_drug_reward(path, condition_suffix):
+def extract_drug_reward(path, condition_suffix=""):
     # Extract the reward value from filenames such as:
     # EVAL_DRUG_R25_NO_GROWTH_Q_EP15k_TIME_...
     # Evaluation_Results_logbook_q_table_drug_reward_25_no_growth_EP_5000_TIME_...
-    match = re.search(
-        rf"(?:DRUG_R|drug_reward_)(\d+)_{re.escape(condition_suffix)}",
-        path.stem,
-        flags=re.IGNORECASE
-    )
+    if condition_suffix:
+        pattern = rf"(?:DRUG_R|drug_reward_)(\d+)_{re.escape(condition_suffix)}"
+    else:
+        pattern = r"(?:DRUG_R|drug_reward_)(\d+)"
+        
+    match = re.search(pattern, path.stem, flags=re.IGNORECASE)
     return int(match.group(1)) if match else None
 
 
