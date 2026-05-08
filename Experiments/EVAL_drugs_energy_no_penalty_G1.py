@@ -86,7 +86,7 @@ def evaluate_q_table(q_table_path):
     base_env.n_foods = 1
     base_env.n_drugs = 1
     base_env.drug_reward = drug_reward
-    base_env.drug_growth = 0
+    base_env.drug_growth = 1
     base_env.max_energy = 100
     base_env.step_energy_cost = 1
     base_env.drug_resets_energy = True

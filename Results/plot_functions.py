@@ -110,13 +110,33 @@ def plot_baseline_boxplots(general_results_folder, subfolders=("Base", "Base_Ene
             ax.set_visible(False)
             continue
             
-        ax.boxplot(plot_data, labels=labels, showmeans=True)
+        ax.boxplot(
+            plot_data,
+            labels=labels,
+            showmeans=True,
+            meanprops={
+                "marker": "s",
+                "markerfacecolor": "green",
+                "markeredgecolor": "green",
+            },
+        )
         ax.tick_params(axis='both', which='major', labelsize=14)
         
         # Compute means for each condition
         means = [d.mean() for d in plot_data]
         x = np.arange(1, len(means) + 1)
         ax.plot(x, means, linestyle='--', marker='o', color='red', linewidth=2, label='Mean trend', alpha=0.5)
+        for x_pos, mean_value in zip(x, means):
+            ax.annotate(
+                f"{mean_value:.1f}",
+                xy=(x_pos, mean_value),
+                xytext=(0, 8),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=11,
+                color="green",
+            )
         
         ax.legend(fontsize=12)
         ax.set_title(f"{metric} Comparison: {' vs '.join(labels)}", fontsize=16)
@@ -255,3 +275,199 @@ def plot_condition_boxplots(results_folder, condition_suffix, metrics=None, ylim
         plt.grid(axis="y", alpha=0.3)
         plt.tight_layout()
         plt.show()
+
+def plot_condition_boxplots_grid(results_folder, condition_suffix, metrics=None, ylims=None):
+    """
+    Reads multiple CSV files, extracts the Drug Reward condition, and plots
+    multiple metric boxplots together in one 2x2 figure.
+    """
+    full_df = load_evaluation_results(results_folder, condition_suffix)
+
+    if metrics is None:
+        metrics = [
+            "Food_Consumed",
+            "Drugs_Consumed",
+            "Snake_Length",
+            "Steps",
+        ]
+
+    condition_col = "Drug_Reward"
+    conditions = sorted(full_df[condition_col].unique())
+    labels = [f"Reward {cond}" for cond in conditions]
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 10))
+    axes = axes.flatten()
+
+    for ax, metric in zip(axes, metrics):
+        if metric not in full_df.columns:
+            print(f"Warning: Metric '{metric}' not found in data.")
+            ax.set_visible(False)
+            continue
+
+        plot_data = []
+        for cond in conditions:
+            metric_data = full_df.loc[full_df[condition_col] == cond, metric].dropna()
+            plot_data.append(metric_data)
+
+        ax.boxplot(
+            plot_data,
+            labels=labels,
+            showmeans=True,
+            meanprops={
+                "marker": "s",
+                "markerfacecolor": "green",
+                "markeredgecolor": "green",
+            },
+        )
+
+        means = [d.mean() for d in plot_data]
+        x = np.arange(1, len(means) + 1)
+        ax.plot(x, means, linestyle="--", marker="o", color="red", linewidth=2, label="Mean trend")
+
+
+        if ylims is not None and metric in ylims:
+            ax.set_ylim(ylims[metric])
+
+        ax.set_title(f"{metric} by {condition_col}", fontsize=14)
+        ax.set_xlabel("Condition")
+        ax.set_ylabel(metric)
+        ax.tick_params(axis="x", rotation=45)
+        ax.grid(axis="y", alpha=0.3)
+        ax.legend()
+
+    for ax in axes[len(metrics):]:
+        ax.set_visible(False)
+
+    fig.suptitle(f"Condition Comparison: {condition_suffix}", fontsize=16)
+    plt.tight_layout()
+    plt.show()
+
+def plot_preference_ratio_by_reward(results_folder, condition_suffix, ylim=None):
+    """
+    Plots the mean Preference_Ratio for each drug reward condition.
+    Infinite ratios are ignored in the mean because they occur when Food_Consumed is 0.
+    """
+    full_df = load_evaluation_results(results_folder, condition_suffix)
+
+    if "Preference_Ratio" not in full_df.columns:
+        if {"Drugs_Consumed", "Food_Consumed"}.issubset(full_df.columns):
+            full_df["Preference_Ratio"] = full_df["Drugs_Consumed"] / full_df["Food_Consumed"]
+        else:
+            raise ValueError("Preference_Ratio could not be found or computed from the data.")
+
+    ratio_df = full_df.copy()
+    ratio_df["Preference_Ratio"] = ratio_df["Preference_Ratio"].replace([np.inf, -np.inf], np.nan)
+
+    summary = (
+        ratio_df
+        .groupby("Drug_Reward")["Preference_Ratio"]
+        .agg(["mean", "std", "count"])
+        .reset_index()
+        .sort_values("Drug_Reward")
+    )
+    summary["sem"] = summary["std"] / np.sqrt(summary["count"])
+
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(
+        summary["Drug_Reward"],
+        summary["mean"],
+        yerr=summary["sem"],
+        marker="o",
+        linewidth=2,
+        capsize=4,
+        color="purple",
+        label="Mean preference ratio",
+    )
+
+    for _, row in summary.iterrows():
+        plt.annotate(
+            f"{row['mean']:.1f}",
+            xy=(row["Drug_Reward"], row["mean"]),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    plt.title(f"Preference Ratio by Drug Reward: {condition_suffix}")
+    plt.xlabel("Drug Reward")
+    plt.ylabel("Preference Ratio (Drugs / Food)")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_penalty_vs_no_penalty_metric(
+    no_penalty_folder,
+    no_penalty_suffix,
+    penalty_folder,
+    penalty_suffix,
+    metric="Drugs_Consumed",
+    ylim=None,
+):
+    """
+    Compares one metric across matching drug reward levels for the no-penalty
+    and penalty conditions.
+    """
+    no_penalty_df = load_evaluation_results(no_penalty_folder, no_penalty_suffix)
+    penalty_df = load_evaluation_results(penalty_folder, penalty_suffix)
+
+    if metric not in no_penalty_df.columns:
+        raise ValueError(f"Metric '{metric}' not found in no-penalty data.")
+    if metric not in penalty_df.columns:
+        raise ValueError(f"Metric '{metric}' not found in penalty data.")
+
+    def summarize(df):
+        summary = (
+            df
+            .groupby("Drug_Reward")[metric]
+            .agg(["mean", "std", "count"])
+            .reset_index()
+            .sort_values("Drug_Reward")
+        )
+        summary["sem"] = summary["std"] / np.sqrt(summary["count"])
+        return summary
+
+    no_penalty_summary = summarize(no_penalty_df)
+    penalty_summary = summarize(penalty_df)
+
+    common_rewards = sorted(
+        set(no_penalty_summary["Drug_Reward"]).intersection(penalty_summary["Drug_Reward"])
+    )
+    no_penalty_summary = no_penalty_summary[no_penalty_summary["Drug_Reward"].isin(common_rewards)]
+    penalty_summary = penalty_summary[penalty_summary["Drug_Reward"].isin(common_rewards)]
+
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(
+        no_penalty_summary["Drug_Reward"],
+        no_penalty_summary["mean"],
+        yerr=no_penalty_summary["sem"],
+        marker="o",
+        linewidth=2,
+        capsize=4,
+        label="No penalty",
+    )
+    plt.errorbar(
+        penalty_summary["Drug_Reward"],
+        penalty_summary["mean"],
+        yerr=penalty_summary["sem"],
+        marker="s",
+        linewidth=2,
+        capsize=4,
+        label="Penalty",
+    )
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    plt.title(f"{metric}: No Penalty vs Penalty")
+    plt.xlabel("Drug Reward")
+    plt.ylabel(metric)
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
