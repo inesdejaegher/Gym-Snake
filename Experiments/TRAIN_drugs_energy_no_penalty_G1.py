@@ -51,7 +51,7 @@ def run_simulation(condition):
     q_table_name = f"{condition['name']}_Q_EP15k_TIME_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.pkl"
 
     # Dynamically locate the Q-Table folder one directory up from this script
-    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Energy_No_Penalty")
+    q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Energy_No_Penalty_G1")
     os.makedirs(q_table_dir, exist_ok=True) # Create the folder if it doesn't exist
     full_q_table_path = os.path.join(q_table_dir, q_table_name) # Combine folder and file name
 
