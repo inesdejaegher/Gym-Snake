@@ -1,0 +1,157 @@
+import pickle
+import time
+import logging
+import warnings
+import os
+import datetime
+import gym
+import gym_snake
+import numpy as np
+import glob
+
+from helper_func import get_discrete_state, logbook_simulation
+
+warnings.filterwarnings("ignore")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+
+# -----------------------------
+# ----- PARAMETERS TO SET -----
+# -----------------------------
+# Number of episodes we want to do evaluation on
+eval_episodes = 10
+#max_steps_without_consumption = 1000
+
+# ----- STORAGE FOLDER FOR RESULTS -----
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Drugs_Yes_Growth")
+os.makedirs(q_table_dir, exist_ok=True) 
+
+pattern = os.path.join(q_table_dir, "DRUG_R10_GROWTH10_Q_EP*_TIME_*.pkl")
+q_table_paths = sorted(glob.glob(pattern))
+
+if len(q_table_paths) > 0:
+    q_table_path = q_table_paths[-1] # Gets the latest trained baseline
+    q_table_name = os.path.basename(q_table_path)
+else:
+    raise FileNotFoundError("No baseline Q-tables found!")
+
+q_table_path = os.path.join(q_table_dir, q_table_name) 
+
+
+base_name = q_table_name.split("TIME_")[0] + "TIME"
+csv_name = f"VID_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
+csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Base")
+os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
+full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
+
+# ----------------------------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    # Load the trained Q-table
+    with open(q_table_path, "rb") as f:
+        q_table = pickle.load(f)
+
+    logging.info(f"Loaded Q-table with {len(q_table)} known states.")
+
+    # ------------------------------------------------------------------
+    # ----- Initialize environment (MUST MATCH TRAINING SETTINGS!) -----
+    # ------------------------------------------------------------------
+    env = gym.make('snake-v0')
+    base_env = env.unwrapped
+    base_env.grid_size = [10, 10]  # Smaller grid speeds up initial tabular learning
+    base_env.n_foods = 1
+    base_env.n_drugs = 1
+    base_env.drug_reward = 10
+    base_env.drug_growth = 10
+    base_env.step_energy_cost = 0
+    base_env.max_energy = 100      
+    base_env.drug_resets_energy = True # Ensure drugs reset energy to max when consumed
+    base_env.drug_energy_penalty_factor = 0 # No energy penalty for consuming drugs in this condition
+
+    # -----------------------------------
+    # ----- Run the evaluation loop -----
+    # -----------------------------------
+    logging.info("Starting Baseline No Energy Evaluation")
+    for episode in range(eval_episodes):
+        env.reset()
+        state = get_discrete_state(env)
+        
+        done = False
+        total_reward = 0
+        drugs_eaten_this_ep = 0
+        food_eaten_this_ep = 0
+        snake_length = 0
+        steps = 0
+        steps_without_food = 0
+        loop = 0
+        
+        while not done:
+            # --- PURE EXPLOITATION ---
+            # If the agent encounters a state it recognizes, take the best action
+            if state in q_table:
+                action = int(np.argmax(q_table[state]))
+            else:
+                # If it encounters a completely new state during evaluation, 
+                # we just pick a random action as a fallback.
+                action = env.action_space.sample()
+                
+            # Take the action
+            obs, reward, done, info = env.step(action)
+            
+            # ----- TRACK FOOD AND DRUGS EATEN DURING EPISODE -----
+            ate_something = False
+
+            # Track consumed drugs by looking at the info dictionary returned by the environment
+            if info.get("drug_eaten", False):
+                drugs_eaten_this_ep += 1
+                ate_something = True
+                
+            # Track consumed food by checking the reward. (Subtract drug reward to isolate food reward)
+            if reward - (base_env.drug_reward if info.get("drug_eaten", False) else 0) > 0:
+                food_eaten_this_ep += 1
+                ate_something = True
+
+            if ate_something:
+                steps_without_food = 0
+            else:
+                steps_without_food += 1
+
+            # ----- TRACKING SNAKE LENGTH ----
+            # Keep track of the snake's length.
+            # We only update it if it's > 0 because on the final frame when the snake dies, 
+            # the environment deletes the snake object entirely and returns a length of 0.
+            if info.get("snake_length", 0) > 0:
+                snake_length = info.get("snake_length", 0)
+
+            # ----- MOVE TO NEXT STATE -----
+            state = get_discrete_state(env)
+            total_reward += reward
+            steps += 1
+            
+            # ----- RENDER EVALUATION -----
+            # Render the game so we can watch the trained agent
+            # Delete if not needed
+            env.render()
+            time.sleep(0.05)  # Slow down the frames slightly to make it watchable
+            
+            # ----- LOOP PREVENTION -----
+            # Prevent infinite loops if the agent gets stuck going in circles
+            #if steps_without_food > max_steps_without_consumption:
+                #logging.info("Agent stuck in a loop. Forcing episode end.")
+                #loop = 1
+                #break
+
+        # --- SAVE EPISODE RESULTS ---
+        logbook_simulation(full_csv_path, episode, drugs_eaten_this_ep, food_eaten_this_ep, total_reward, snake_length, steps, loop)
+                
+        logging.info(
+            f"Baseline | Evaluation Episode {episode + 1}/{eval_episodes} finished "
+            f"| Total Reward: {total_reward} | Drugs: {drugs_eaten_this_ep} "
+            f"| Food: {food_eaten_this_ep} | Snake Length: {snake_length} | Steps: {steps}"
+        )
+
+    env.close()
+    logging.info("Evaluation Complete!")

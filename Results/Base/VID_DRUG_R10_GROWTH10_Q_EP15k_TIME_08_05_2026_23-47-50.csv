@@ -1,0 +1,7 @@
+Episode,Drugs_Consumed,Food_Consumed,Preference_Ratio,Total_Reward,Snake_Length,Steps,Loop
+0,6,1,6.0,60,45,63,0
+1,4,2,2.0,41,28,33,0
+2,2,1,2.0,20,19,24,0
+3,5,0,inf,49,36,38,0
+4,4,1,4.0,40,33,40,0
+5,7,3,2.3333333333333335,72,64,69,0
