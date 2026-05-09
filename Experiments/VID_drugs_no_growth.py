@@ -67,7 +67,7 @@ def evaluate_q_table(q_table_path):
     # ----- STORAGE FOLDER FOR RESULTS -----
     base_name = q_table_name.split("TIME_")[0] + "TIME"
     csv_name = f"VID_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
-    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Base")
+    csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "VIDEOS")
     os.makedirs(csv_dir, exist_ok=True)
     full_csv_path = os.path.join(csv_dir, csv_name)
 

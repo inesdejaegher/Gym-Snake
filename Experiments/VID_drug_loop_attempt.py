@@ -44,7 +44,7 @@ q_table_path = os.path.join(q_table_dir, q_table_name)
 
 base_name = q_table_name.split("TIME_")[0] + "TIME"
 csv_name = f"VID_{base_name}_{datetime.datetime.now().strftime('%d_%m_%Y_%H-%M-%S')}.csv"
-csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "Base")
+csv_dir = os.path.join(os.path.dirname(__file__), "..", "Results", "VIDEOS")
 os.makedirs(csv_dir, exist_ok=True) # Create the folder if it doesn't exist
 full_csv_path = os.path.join(csv_dir, csv_name) # Combine folder and file name
 

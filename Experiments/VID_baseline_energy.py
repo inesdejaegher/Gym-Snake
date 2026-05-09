@@ -27,10 +27,10 @@ eval_episodes = 10
 max_steps_without_consumption = 100
 
 # ----- STORAGE FOLDER FOR RESULTS -----
-q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base")
+q_table_dir = os.path.join(os.path.dirname(__file__), "..", "Q-Tables", "Base_Energy")
 os.makedirs(q_table_dir, exist_ok=True) 
 
-pattern = os.path.join(q_table_dir, "BASE_Q_EP*_TIME_*.pkl")
+pattern = os.path.join(q_table_dir, "BASE_ENERGY_Q_EP*_TIME_*.pkl")
 q_table_paths = sorted(glob.glob(pattern))
 
 if len(q_table_paths) > 0:
@@ -66,14 +66,14 @@ if __name__ == "__main__":
     base_env.n_drugs = 0           # Baseline scenario: no drugs
     base_env.drug_reward = 0       # Baseline scenario: drugs have no effect
     base_env.drug_growth = 0       # Baseline scenario: drugs give no growth
-    
-    base_env.max_energy = 100
-    base_env.step_energy_cost = 0
+    base_env.max_energy = 100      # Baseline scenario: snake starts with 100 energy and can never exceed this amount (resets to this after eating food)
+    base_env.step_energy_cost = 1  # Baseline scenario: snake loses 1 energy for every step taken 
+
 
     # -----------------------------------
     # ----- Run the evaluation loop -----
     # -----------------------------------
-    logging.info("Starting Baseline No Energy Evaluation")
+    logging.info("Starting Baseline Energy Evaluation")
     for episode in range(eval_episodes):
         env.reset()
         state = get_discrete_state(env)
