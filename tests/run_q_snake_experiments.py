@@ -12,13 +12,13 @@ import gym
 import gym_snake
 import numpy as np
 
-```python run_q_snake_experiments.py \
-  --episodes 3000 \
-  --seeds 0,1,2 \
-  --n-drugs 0,1,2 \
-  --drug-growths 0,3,6 \
-  --drug-rewards 6
-````
+#python run_q_snake_experiments.py \
+ # --episodes 3000 \
+  #--seeds 0,1,2 \
+  #--n-drugs 0,1,2 \
+  #--drug-growths 0,3,6 \
+  #--drug-rewards 6
+
 
 np.bool8 = np.bool_
 
